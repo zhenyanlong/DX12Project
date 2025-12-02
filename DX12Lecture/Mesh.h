@@ -34,6 +34,8 @@ public:
 
 	static void CreateSphere(Core* core, Mesh* sphere, int rings, int segments, float radius);
 
+	static void CreateGEM(Core* core, std::vector<Mesh>& meshes, std::string filename);
+
 	static STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
 	{
 		STATIC_VERTEX v;

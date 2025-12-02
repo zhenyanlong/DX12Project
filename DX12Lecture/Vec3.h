@@ -396,6 +396,13 @@ public:
 		return mat;
 	}
 
+	static void SetScaling(Matrix& matrix, Vec3 scaling)
+	{
+		matrix.m[0] = scaling.x;
+		matrix.m[5] = scaling.y;
+		matrix.m[10] = scaling.z;
+	}
+
 	// 透视投影矩阵（DirectX左手坐标系，z范围[0,1]，匹配HLSL）
 	static Matrix GetProjectionMatrix(float fovDegree, float InNear, float InFar)
 	{

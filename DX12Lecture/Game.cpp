@@ -91,29 +91,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	ScreenSpaceTriangle tri;
 	// init mesh
-	Mesh mesh;
+	//Mesh mesh;
 	//Mesh::CreatePlane(&core, &mesh);
-	Mesh::CreateCube(&core, &mesh);
+	//Mesh::CreateCube(&core, &mesh);
 	//Mesh::CreateSphere(&core, &mesh, 16, 24, 5);
+	std::vector<Mesh> meshes;
+	Mesh::CreateGEM(&core, meshes, "Resources/acacia_003.gem");
 
 	Pipeline pipe;
 	pipe.init();
 	PSOManager psos;
-	psos.createPSO(&core, "Triangle", pipe.vertexShader, pipe.pixelShader, mesh.inputLayoutDesc);
+	psos.createPSO(&core, "Triangle", pipe.vertexShader, pipe.pixelShader, meshes[0].inputLayoutDesc);
 
 	std::vector<ConstantBuffer> vsBuffers = ConstantBuffer::reflect(&core, pipe.vertexShader);
 
 
-
-	/*unsigned int bufferSize = constantBuffer.reflect(pipe.pixelShader);
-	constantBuffer.init(&core, bufferSize, 1);*/
-	/*ID3D12ShaderReflection* reflection;
-	D3DReflect(shader->GetBufferPointer(), shader->GetBufferSize(), IID_PPV_ARGS(&reflection));
-	D3D12_SHADER_DESC desc;
-	reflection->GetDesc(&desc);*/
-
-	//ConstantBuffer1 constBufferCPU;
-	//constBufferCPU.time = 0;
 	ConstantBuffer2 constBufferCPU2;
 	constBufferCPU2.time = 0;
 	for (int i =0;i<4 ;i++)
@@ -137,17 +129,18 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 		dt = timer.dt();
 		cultime += dt;
-		Vec4 cameraPos(40 * cos(cultime), 15.0f,40 * sin(cultime), 1.0f); // 相机位置
-		Vec4 cameraTarget(0.0f, 1.0f, 0.0f, 1.0f);                  // 观察目标
-		Vec4 cameraUp(0.0f, 1.0f, 0.0f, 0.0f);                      // 上向量
+		Vec4 cameraPos(40 * cos(cultime), 15.0f,40 * sin(cultime), 1.0f); 
+		Vec4 cameraTarget(0.0f, 1.0f, 0.0f, 1.0f);                  
+		Vec4 cameraUp(0.0f, 1.0f, 0.0f, 0.0f);                      
 
 		/*Vec4 from = Vec4(11 * cos(0), 5, 11 * sinf(0), 1.f);
 		Matrix w = Matrix::GetProjectionMatrix(90, 0.1, 10);
 		Matrix v = Matrix::GetLookAtMatrix(from, Vec4(0, 1, 0,1), Vec4(0, 1, 0,0));*/
 		//Matrix w = Matrix::SetPositionMatrix(Vec4(0, 0, 0, 1));
-		Matrix worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f)); // 模型世界矩阵（无平移）
-		Matrix viewMatrix = Matrix::GetLookAtMatrix(cameraPos, cameraTarget, cameraUp); // 观察矩阵
-		Matrix projMatrix = Matrix::GetProjectionMatrix(45.0f, 1.f, 100.0f); // 投影矩阵（Far设为100避免裁剪）
+		Matrix worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f)); 
+		Matrix::SetScaling(worldMatrix, Vec3(0.02f, 0.02f, 0.02f));
+		Matrix viewMatrix = Matrix::GetLookAtMatrix(cameraPos, cameraTarget, cameraUp); 
+		Matrix projMatrix = Matrix::GetProjectionMatrix(45.0f, 1.f, 100.0f); 
 		Matrix viewProjMatrix = viewMatrix.mul(projMatrix);
 
 		
@@ -156,16 +149,19 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "W", &worldMatrix);
 		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "VP", &viewProjMatrix);
 		submitToCommandList(&core, vsBuffers);
-		draw(&core, psos, mesh);
-
+		//draw(&core, psos, mesh);
+		for (int i=0;i<meshes.size();i++)
+		{
+			draw(&core, psos, meshes[i]);
+		}
 		
 		//core.getCommandList()->SetGraphicsRootSignature(core.rootSignature);
-		worldMatrix = Matrix::SetPositionMatrix(Vec4(15.0f, 0.0f, 0.0f, 1.0f));
+		/*worldMatrix = Matrix::SetPositionMatrix(Vec4(15.0f, 0.0f, 0.0f, 1.0f));
 
 		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "W", &worldMatrix);
 		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "VP", &viewProjMatrix);
 		submitToCommandList(&core, vsBuffers);
-		draw(&core, psos, mesh);
+		draw(&core, psos, mesh);*/
 		
 		
 		core.finishFrame();

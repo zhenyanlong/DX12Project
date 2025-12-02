@@ -130,6 +130,7 @@
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="GamesEngineeringBase.h" />
+    <ClInclude Include="GEMLoader.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="PSOManager.h" />
@@ -170,6 +171,17 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
     </FxCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\acacia_003.gem" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\Textures\T-rex_Base_Color_alb.png" />
+    <Image Include="Resources\Textures\T-rex_Base_Color_nh.png" />
+    <Image Include="Resources\Textures\T-rex_Base_Color_rmax.png" />
+    <Image Include="Resources\Textures\Textures1_ALB.png" />
+    <Image Include="Resources\Textures\Textures1_NH.png" />
+    <Image Include="Resources\Textures\Textures1_RMAX.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
