@@ -3,6 +3,7 @@
 #include <dxgi1_6.h>
 #include <d3dcompiler.h>
 #include <vector>
+#define NOMINMAX
 #pragma comment(lib, "d3d12")
 #pragma comment(lib, "dxgi")
 #pragma comment(lib, "d3dcompiler.lib")

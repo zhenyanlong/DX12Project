@@ -48,7 +48,7 @@ public:
 
 void draw(Core* core, PSOManager& psos, Mesh& prim) {
 	core->beginRenderPass();
-	psos.bind(core, "Triangle");
+	//psos.bind(core, "Triangle");
 	prim.draw(core);
 }
 
@@ -95,15 +95,27 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	//Mesh::CreatePlane(&core, &mesh);
 	//Mesh::CreateCube(&core, &mesh);
 	//Mesh::CreateSphere(&core, &mesh, 16, 24, 5);
-	std::vector<Mesh> meshes;
-	Mesh::CreateGEM(&core, meshes, "Resources/acacia_003.gem");
+	StaticMesh staticMesh(&core, "Resources/acacia_003.gem");
+	//std::vector<Mesh> meshes;
+	//Mesh::CreateGEM(&core, staticMesh.meshes, "Resources/acacia_003.gem");
+	//init general matrix
+	GeneralMatrix* gm = GeneralMatrix::Create();
 
 	Pipeline pipe;
+	
 	pipe.init();
 	PSOManager psos;
-	psos.createPSO(&core, "Triangle", pipe.vertexShader, pipe.pixelShader, meshes[0].inputLayoutDesc);
+
+	psos.createPSO(&core, "Triangle", pipe.vertexShader, pipe.pixelShader, VertexLayoutCache::getStaticLayout());
 
 	std::vector<ConstantBuffer> vsBuffers = ConstantBuffer::reflect(&core, pipe.vertexShader);
+
+	std::string pipeName = "UnTextured";
+	std::string vsName = "VertexShader.hlsl";
+	std::string psName = "PixelShader.hlsl";
+	//Pipelines::Get();
+	Pipelines pipes;
+	pipes.loadPipeline(core, pipeName, psos, vsName, psName, VertexLayoutCache::getStaticLayout());
 
 
 	ConstantBuffer2 constBufferCPU2;
@@ -137,31 +149,22 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		Matrix w = Matrix::GetProjectionMatrix(90, 0.1, 10);
 		Matrix v = Matrix::GetLookAtMatrix(from, Vec4(0, 1, 0,1), Vec4(0, 1, 0,0));*/
 		//Matrix w = Matrix::SetPositionMatrix(Vec4(0, 0, 0, 1));
-		Matrix worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f)); 
-		Matrix::SetScaling(worldMatrix, Vec3(0.02f, 0.02f, 0.02f));
+		gm->worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		Matrix::SetScaling(gm->worldMatrix, Vec3(0.02f, 0.02f, 0.02f));
 		Matrix viewMatrix = Matrix::GetLookAtMatrix(cameraPos, cameraTarget, cameraUp); 
 		Matrix projMatrix = Matrix::GetProjectionMatrix(45.0f, 1.f, 100.0f); 
-		Matrix viewProjMatrix = viewMatrix.mul(projMatrix);
+		gm->viewProjMatrix = viewMatrix.mul(projMatrix);
 
 		
 		//vsBuffers[0].update("W", &worldMatrix);
 		//vsBuffers[0].update("VP", &viewProjMatrix);
-		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "W", &worldMatrix);
-		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "VP", &viewProjMatrix);
-		submitToCommandList(&core, vsBuffers);
-		//draw(&core, psos, mesh);
-		for (int i=0;i<meshes.size();i++)
-		{
-			draw(&core, psos, meshes[i]);
-		}
 		
-		//core.getCommandList()->SetGraphicsRootSignature(core.rootSignature);
-		/*worldMatrix = Matrix::SetPositionMatrix(Vec4(15.0f, 0.0f, 0.0f, 1.0f));
-
-		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "W", &worldMatrix);
-		updateConstantBuffer(vsBuffers, "staticMeshBuffer", "VP", &viewProjMatrix);
-		submitToCommandList(&core, vsBuffers);
-		draw(&core, psos, mesh);*/
+		//updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &gm->worldMatrix);
+		//updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
+		//submitToCommandList(&core, pipes.pipelines[pipeName].vsConstantBuffers);
+		
+		staticMesh.draw(&core, psos, pipeName, pipes);
+		
 		
 		
 		core.finishFrame();

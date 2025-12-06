@@ -37,9 +37,9 @@ public:
 	{
 		ConstantBufferVariable cbVariable = constantBufferData[name];
 		unsigned int offset = offsetIndex * cbSizeInBytes;
-		constantBuffer->Map(0, NULL, (void**)&buffer);
+		//constantBuffer->Map(0, NULL, (void**)&buffer);
 		memcpy(&buffer[offset + cbVariable.offset], data, cbVariable.size);
-		constantBuffer->Unmap(0, NULL);
+		//constantBuffer->Unmap(0, NULL);
 	}
 	D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const
 	{
@@ -90,6 +90,12 @@ public:
 		}
 		
 		return buffers;
+	}
+
+	void free()
+	{
+		constantBuffer->Unmap(0, NULL);
+		constantBuffer->Release();
 	}
 };
 

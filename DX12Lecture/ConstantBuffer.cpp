@@ -22,6 +22,6 @@ void ConstantBuffer::init(Core* core, unsigned int sizeInBytes, unsigned int _ma
 	cbDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	core->device->CreateCommittedResource(&heapprops, D3D12_HEAP_FLAG_NONE, &cbDesc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
 		IID_PPV_ARGS(&constantBuffer));
-	//constantBuffer->Map(0, NULL, (void**)&buffer);
+	constantBuffer->Map(0, NULL, (void**)&buffer);
 
 }

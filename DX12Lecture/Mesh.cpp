@@ -1,5 +1,6 @@
 #include "Mesh.h"
 #include "GEMLoader.h"
+
 void Mesh::init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
 	unsigned int* indices, int numIndices)
 
@@ -194,3 +195,45 @@ void Mesh::CreateGEM(Core* core, std::vector<Mesh>& meshes, std::string filename
 	}
 
 }
+
+StaticMesh::StaticMesh(Core* core, std::string filename)
+{
+	CreateFromGEM(core, filename);
+}
+
+void StaticMesh::CreateFromGEM(Core* core, std::string filename)
+{
+	GEMLoader::GEMModelLoader loader;
+	std::vector<GEMLoader::GEMMesh> gemmeshes;
+	loader.load(filename, gemmeshes);
+	for (int i = 0; i < gemmeshes.size(); i++) {
+		Mesh mesh;
+		std::vector<STATIC_VERTEX> vertices;
+		for (int j = 0; j < gemmeshes[i].verticesStatic.size(); j++) {
+			STATIC_VERTEX v;
+			memcpy(&v, &gemmeshes[i].verticesStatic[j], sizeof(STATIC_VERTEX));
+			vertices.push_back(v);
+		}
+		mesh.init(core, vertices, gemmeshes[i].indices);
+		meshes.push_back(mesh);
+	}
+}
+
+void StaticMesh::draw(Core* core, PSOManager& psos, std::string pipeName, Pipelines& pipes)
+{
+	GeneralMatrix* gm = GeneralMatrix::Get();
+	
+	Pipelines::updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &gm->worldMatrix);
+	Pipelines::updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
+	Pipelines::submitToCommandList(core, pipes.pipelines[pipeName].vsConstantBuffers);
+	
+	for (int i=0;i<meshes.size();i++)
+	{
+		core->beginRenderPass();
+		psos.bind(core, pipes.pipelines[pipeName].psoName);
+		meshes[i].draw(core);
+	}
+}
+
+
+GeneralMatrix* GeneralMatrix::SingleInstance = nullptr;

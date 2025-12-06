@@ -2,10 +2,19 @@
 #include <cmath>  // 包含sqrtf、max等数学函数
 #include <iostream>
 //#define NOMINMAX
+#undef min
+#undef max
 #define SQ(x) ((x) * (x))
 #define PI       3.14159265358979323846
 #define WIDTH 1280
 #define HEIGHT 720
+
+template<typename T>
+static T clamp(const T value, const T minValue, const T maxValue)
+{
+	return std::max(std::min(value, maxValue), minValue);
+}
+
 class Vec3
 {
 public:
@@ -501,7 +510,10 @@ public:
 
 
 	}
-
+	Matrix operator*(const Matrix& matrix)
+	{
+		return mul(matrix);
+	}
 	
 };
 
@@ -536,6 +548,143 @@ struct Colour
 	}
 };
 
+class Quaternion
+{
+public:
+	union {
+		struct {
+			float a;
+			float b;
+			float c;
+			float d;
+		};
+		float q[4];
+	};
+	Quaternion()
+	{
+		a = 0;
+		b = 0;
+		c = 0;
+		d = 0;
+	}
+	Quaternion(float _x, float _y, float _z, float _w)
+	{
+		a = _x;
+		b = _y;
+		c = _z;
+		d = _w;
+	}
+	float norm()
+	{
+		return sqrtf(SQ(a) + SQ(b) + SQ(c) + SQ(d));
+	}
+	void Normalize()
+	{
+		float n = 1.0f / sqrtf(SQ(a) + SQ(b) + SQ(c) + SQ(d));
+		a *= n;
+		b *= n;
+		c *= n;
+		d *= n;
+	}
+	void Conjugate()
+	{
+		a = -a;
+		b = -b;
+		c = -c;
+	}
+	void invert()
+	{
+		Conjugate();
+		Normalize();
+	}
+	Quaternion operator*(Quaternion q1)
+	{
+		Quaternion v;
+		v.a = ((d * q1.a) + (a * q1.d) + (b * q1.c) - (c * q1.b));
+		v.b = ((d * q1.b) - (a * q1.c) + (b * q1.d) + (c * q1.a));
+		v.c = ((d * q1.c) + (a * q1.b) - (b * q1.a) + (c * q1.d));
+		v.d = ((d * q1.d) - (a * q1.a) - (b * q1.b) - (c * q1.c));
+		return v;
+	}
+	Matrix toMatrix()
+	{
+		float aa = a * a;
+		float ab = a * b;
+		float ac = a * c;
+		float bb = b * b;
+		float cc = c * c;
+		float bc = b * c;
+		float da = d * a;
+		float db = d * b;
+		float dc = d * c;
+		Matrix matrix;
+		matrix.m[0] = 1.0f - 2.0f * (bb + cc);
+		matrix.m[1] = 2.0f * (ab - dc);
+		matrix.m[2] = 2.0f * (ac + db);
+		matrix.m[3] = 0.0;
+		matrix.m[4] = 2.0f * (ab + dc);
+		matrix.m[5] = 1.0f - 2.0f * (aa + cc);
+		matrix.m[6] = 2.0f * (bc - da);
+		matrix.m[7] = 0.0;
+		matrix.m[8] = 2.0f * (ac - db);
+		matrix.m[9] = 2.0f * (bc + da);
+		matrix.m[10] = 1.0f - 2.0f * (aa + bb);
+		matrix.m[11] = 0.0;
+		matrix.m[12] = 0;
+		matrix.m[13] = 0;
+		matrix.m[14] = 0;
+		matrix.m[15] = 1;
+		return matrix;
+	}
+	void rotateAboutAxis(Vec3 pt, float angle, Vec3 axis)
+	{
+		Quaternion q1, p, qinv;
+		q1.a = sinf(0.5f * angle) * axis.x;
+		q1.b = sinf(0.5f * angle) * axis.y;
+		q1.c = sinf(0.5f * angle) * axis.z;
+		q1.d = cosf(0.5f * angle);
+		p.a = pt.x;
+		p.b = pt.y;
+		p.c = pt.z;
+		p.d = 0;
+		qinv = q1;
+		qinv.invert();
+		q1 = q1 * p;
+		q1 = q1 * qinv;
+		a = q1.a;
+		b = q1.b;
+		c = q1.c;
+		d = q1.d;
+	}
+	static Quaternion slerp(Quaternion q1, Quaternion q2, float t)
+	{
+		Quaternion qr;
+		float dp = q1.a * q2.a + q1.b * q2.b + q1.c * q2.c + q1.d * q2.d;
+		Quaternion q11 = dp < 0 ? -q1 : q1;
+		dp = dp > 0 ? dp : -dp;
+		float theta = acosf(clamp(dp, -1.0f, 1.0f));
+		if (theta == 0)
+		{
+			return q1;
+		}
+		float d = sinf(theta);
+		float a = sinf((1 - t) * theta);
+		float b = sinf(t * theta);
+		float coeff1 = a / d;
+		float coeff2 = b / d;
+		qr.a = coeff1 * q11.a + coeff2 * q2.a;
+		qr.b = coeff1 * q11.b + coeff2 * q2.b;
+		qr.c = coeff1 * q11.c + coeff2 * q2.c;
+		qr.d = coeff1 * q11.d + coeff2 * q2.d;
+		qr.Normalize();
+		return qr;
+	}
+	Quaternion operator-()
+	{
+		return Quaternion(-a, -b, -c, -d);
+	}
+};
+
 struct PRIM_VERTEX
 {
 	Vec3 position;
@@ -550,4 +699,15 @@ struct STATIC_VERTEX
 	Vec3 tangent;
 	float tu;
 	float tv;
+};
+
+struct ANIMATED_VERTEX
+{
+	Vec3 pos;
+	Vec3 normal;
+	Vec3 tangent;
+	float tu;
+	float tv;
+	unsigned int bonesIDs[4];
+	float boneWeights[4];
 };
