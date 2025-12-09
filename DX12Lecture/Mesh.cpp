@@ -1,6 +1,6 @@
 #include "Mesh.h"
 #include "GEMLoader.h"
-
+#include "TextureManager.h"
 void Mesh::init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
 	unsigned int* indices, int numIndices)
 
@@ -55,6 +55,7 @@ D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	ibView.Format = DXGI_FORMAT_R32_UINT;
 	ibView.SizeInBytes = numIndices * sizeof(unsigned int);
 	numMeshIndices = numIndices;
+
 
 }
 
@@ -219,21 +220,169 @@ void StaticMesh::CreateFromGEM(Core* core, std::string filename)
 	}
 }
 
-void StaticMesh::draw(Core* core, PSOManager& psos, std::string pipeName, Pipelines& pipes)
+void StaticMesh::draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes)
 {
 	GeneralMatrix* gm = GeneralMatrix::Get();
 	
-	Pipelines::updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &gm->worldMatrix);
-	Pipelines::updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
-	Pipelines::submitToCommandList(core, pipes.pipelines[pipeName].vsConstantBuffers);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &m_worldPosMat);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
+	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
 	
+	TextureManager* texs = TextureManager::Get();
 	for (int i=0;i<meshes.size();i++)
 	{
 		core->beginRenderPass();
-		psos.bind(core, pipes.pipelines[pipeName].psoName);
+		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
+		psos->bind(core, pipes->pipelines[pipeName].psoName);
 		meshes[i].draw(core);
 	}
 }
 
+StaticMesh::StaticMesh()
+{
+}
+
+void StaticMesh::CreateFromSphere(Core* core, int rings, int segments, float radius, std::string skyPath)
+{
+	// create sphere's vertices and indices
+	Mesh sphere;
+	TextureManager* texMgr = TextureManager::Get();
+	std::vector<STATIC_VERTEX> vertices;
+	for (int lat = 0; lat <= rings; lat++) {
+		float theta = lat * PI / rings;
+		float sinTheta = sinf(theta);
+		float cosTheta = cosf(theta);
+		for (int lon = 0; lon <= segments; lon++) {
+			float phi = lon * 2.0f * PI / segments;
+			float sinPhi = sinf(phi);
+			float cosPhi = cosf(phi);
+			Vec3 position(radius * sinTheta * cosPhi, radius * cosTheta,
+				radius * sinTheta * sinPhi);
+			Vec3 normal = position.normalize();
+			float tu = 1.0f - (float)lon / segments;
+			float tv = 1.0f - (float)lat / rings;
+			vertices.push_back(Mesh::addVertex(position, normal, tu, tv));
+		}
+	}
+	std::vector<unsigned int> indices;
+	for (int lat = 0; lat < rings; lat++)
+	{
+		for (int lon = 0; lon < segments; lon++)
+		{
+			int current = lat * (segments + 1) + lon;
+			int next = current + segments + 1;
+			indices.push_back(current);
+			indices.push_back(next);
+			indices.push_back(current + 1);
+			indices.push_back(current + 1);
+			indices.push_back(next);
+			indices.push_back(next + 1);
+		}
+	}
+	// load texture
+	textureFilenames.push_back(skyPath);
+	texMgr->loadTexture(core, skyPath);
+	// init sphere
+	sphere.init(core, vertices, indices);
+	// load mesh
+	meshes.push_back(sphere);
+}
+
 
 GeneralMatrix* GeneralMatrix::SingleInstance = nullptr;
+
+AnimatedModel::AnimatedModel(Core* core, std::string filename)
+{
+	CreateFromGEM(core, filename);
+}
+
+void AnimatedModel::CreateFromGEM(Core* core, std::string filename)
+{
+	GEMLoader::GEMModelLoader loader;
+	std::vector<GEMLoader::GEMMesh> gemmeshes;
+	GEMLoader::GEMAnimation gemanimation;
+	TextureManager* texMgr = TextureManager::Get();
+
+	loader.load(filename, gemmeshes, gemanimation);
+	for (int i = 0; i < gemmeshes.size(); i++)
+	{
+		Mesh* mesh = new Mesh();
+		std::vector<ANIMATED_VERTEX> vertices;
+		for (int j = 0; j < gemmeshes[i].verticesAnimated.size(); j++)
+		{
+			ANIMATED_VERTEX v;
+			memcpy(&v, &gemmeshes[i].verticesAnimated[j], sizeof(ANIMATED_VERTEX));
+			vertices.push_back(v);
+		}
+		textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
+		texMgr->loadTexture(core, gemmeshes[i].material.find("albedo").getValue());
+		mesh->init(core, vertices, gemmeshes[i].indices);
+		meshes.push_back(mesh);
+	}
+
+	memcpy(&animation.skeleton.globalInverse, &gemanimation.globalInverse, 16 * sizeof(float));
+	for (int i = 0; i < gemanimation.bones.size(); i++)
+	{
+		Bone bone;
+		bone.name = gemanimation.bones[i].name;
+		memcpy(&bone.offset, &gemanimation.bones[i].offset, 16 * sizeof(float));
+		bone.parentIndex = gemanimation.bones[i].parentIndex;
+		animation.skeleton.bones.push_back(bone);
+	}
+	for (int i = 0; i < gemanimation.animations.size(); i++)
+	{
+		std::string name = gemanimation.animations[i].name;
+		AnimationSequence aseq;
+		aseq.ticksPerSecond = gemanimation.animations[i].ticksPerSecond;
+		for (int j = 0; j < gemanimation.animations[i].frames.size(); j++)
+		{
+			AnimationFrame frame;
+			for (int index = 0; index < gemanimation.animations[i].frames[j].positions.size(); index++)
+			{
+				Vec3 p;
+				Quaternion q;
+				Vec3 s;
+				memcpy(&p, &gemanimation.animations[i].frames[j].positions[index], sizeof(Vec3));
+				frame.positions.push_back(p);
+				memcpy(&q, &gemanimation.animations[i].frames[j].rotations[index], sizeof(Quaternion));
+				frame.rotations.push_back(q);
+				memcpy(&s, &gemanimation.animations[i].frames[j].scales[index], sizeof(Vec3));
+				frame.scales.push_back(s);
+			}
+			aseq.frames.push_back(frame);
+		}
+		animation.animations.insert({ name, aseq });
+	}
+}
+
+void AnimatedModel::draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt)
+{
+	instance->update("walk", dt);
+	std::vector<std::string> names;
+	names = instance->animation->getAllAnimationNames();
+	if (instance->animationFinished() == true)
+	{
+		instance->resetAnimationTime();
+	}
+	{
+		GeneralMatrix* gm = GeneralMatrix::Get();
+		
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &m_worldPosMat);
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
+		if (instance != nullptr)
+		{
+			Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "bones", instance->matrices);
+		}
+
+		Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
+		//shaders->apply(core, "AnimatedUntextured");
+		TextureManager* texs = TextureManager::Get();
+		for (int i = 0; i < meshes.size(); i++)
+		{
+			core->beginRenderPass();
+			Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
+			psos->bind(core, pipes->pipelines[pipeName].psoName);
+			meshes[i]->draw(core);
+		}
+	}
+}

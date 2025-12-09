@@ -104,6 +104,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -118,6 +119,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -127,28 +129,43 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Actor.h" />
+    <ClInclude Include="Actors\Test.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Core.h" />
+    <ClInclude Include="DescriptorHeap.h" />
     <ClInclude Include="GamesEngineeringBase.h" />
     <ClInclude Include="GEMLoader.h" />
+    <ClInclude Include="GeneralEvent.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="PSOManager.h" />
     <ClInclude Include="ScreenSpaceTriangle.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Vec3.h" />
     <ClInclude Include="VertexLayoutCache.h" />
     <ClInclude Include="Window.h" />
+    <ClInclude Include="World.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Actor.cpp" />
+    <ClCompile Include="Actors\Test.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Core.cpp" />
+    <ClCompile Include="DescriptorHeap.cpp" />
     <ClCompile Include="Game.cpp" />
+    <ClCompile Include="GeneralEvent.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PSOManager.cpp" />
     <ClCompile Include="ScreenSpaceTriangle.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="VertexLayoutCache.cpp" />
     <ClCompile Include="Window.cpp" />
+    <ClCompile Include="World.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PixelShader.hlsl">
@@ -160,6 +177,16 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
+    </FxCompile>
+    <FxCompile Include="PixelShaderTextured.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
     </FxCompile>
     <FxCompile Include="Shaders\VertexShaderAnim.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
@@ -183,15 +210,19 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\acacia_003.gem" />
+    <None Include="Models\acacia_003.gem" />
+    <None Include="Models\TRex.gem" />
+    <None Include="Resources\model\Bull-dark.gem" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Resources\Textures\T-rex_Base_Color_alb.png" />
-    <Image Include="Resources\Textures\T-rex_Base_Color_nh.png" />
-    <Image Include="Resources\Textures\T-rex_Base_Color_rmax.png" />
-    <Image Include="Resources\Textures\Textures1_ALB.png" />
-    <Image Include="Resources\Textures\Textures1_NH.png" />
-    <Image Include="Resources\Textures\Textures1_RMAX.png" />
+    <Image Include="Models\Textures\citrus_orchard_road_puresky.png" />
+    <Image Include="Models\Textures\sky.png" />
+    <Image Include="Models\Textures\T-rex_Base_Color_alb.png" />
+    <Image Include="Models\Textures\T-rex_Base_Color_nh.png" />
+    <Image Include="Models\Textures\T-rex_Base_Color_rmax.png" />
+    <Image Include="Models\Textures\Textures1_ALB.png" />
+    <Image Include="Models\Textures\Textures1_NH.png" />
+    <Image Include="Models\Textures\Textures1_RMAX.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

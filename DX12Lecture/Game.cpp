@@ -7,6 +7,8 @@
 #include "ConstantBuffer.h"
 #include "VertexLayoutCache.h"
 #include "algorithm"
+#include "World.h"
+#include "TextureManager.h"
 //#include "GamesEngineeringBase.h"
 #define M_PI       3.14159265358979323846   // pi
 
@@ -82,41 +84,50 @@ void submitToCommandList(Core* core, std::vector<ConstantBuffer>& constantBuffer
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR lpCmdLine, int nCmdShow)
 {
+	// activate or create single instance
 	Window win;
 	Core core;
-
+	
 	win.create(WIDTH, HEIGHT, "My Window");
-
 	core.init(win.hwnd, WIDTH, HEIGHT);
 
+	World* myWorld = World::Create(core);
+	GeneralMatrix* gm = GeneralMatrix::Create();
+	TextureManager* textures = TextureManager::Create();
+
+	//Texture tex(&core, "Models/Textures/T-rex_Base_Color_alb.png");
 	ScreenSpaceTriangle tri;
 	// init mesh
 	//Mesh mesh;
 	//Mesh::CreatePlane(&core, &mesh);
 	//Mesh::CreateCube(&core, &mesh);
 	//Mesh::CreateSphere(&core, &mesh, 16, 24, 5);
-	StaticMesh staticMesh(&core, "Resources/acacia_003.gem");
+	StaticMesh staticMesh(&core, "Models/acacia_003.gem");
+	AnimatedModel animMesh(&core, "Models/TRex.gem");
+	StaticMesh SkySphere;
+	SkySphere.CreateFromSphere(&core, 16, 24, 5, "Models/Textures/sky.png");
+	SkySphere.SetWorldScaling(Vec3(1000.f, 1000.f, 1000.f));
+	SkySphere.SetWorldRotationRadian(Vec3(M_PI, 0.f, 0.f));
 	//std::vector<Mesh> meshes;
 	//Mesh::CreateGEM(&core, staticMesh.meshes, "Resources/acacia_003.gem");
 	//init general matrix
-	GeneralMatrix* gm = GeneralMatrix::Create();
+	
 
 	Pipeline pipe;
 	
 	pipe.init();
-	PSOManager psos;
+	//PSOManager psos;
 
-	psos.createPSO(&core, "Triangle", pipe.vertexShader, pipe.pixelShader, VertexLayoutCache::getStaticLayout());
+	//psos.createPSO(&core, "Triangle", pipe.vertexShader, pipe.pixelShader, VertexLayoutCache::getStaticLayout());
 
 	std::vector<ConstantBuffer> vsBuffers = ConstantBuffer::reflect(&core, pipe.vertexShader);
 
-	std::string pipeName = "UnTextured";
-	std::string vsName = "VertexShader.hlsl";
-	std::string psName = "PixelShader.hlsl";
-	//Pipelines::Get();
-	Pipelines pipes;
-	pipes.loadPipeline(core, pipeName, psos, vsName, psName, VertexLayoutCache::getStaticLayout());
 
+	//Pipelines::Get();
+	//Pipelines pipes;
+	
+	AnimationInstance animatedInstance;
+	animatedInstance.init(&animMesh.animation, 0);
 
 	ConstantBuffer2 constBufferCPU2;
 	constBufferCPU2.time = 0;
@@ -138,6 +149,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		core.beginFrame();
 
 		core.getCommandList()->SetGraphicsRootSignature(core.rootSignature);
+		core.getCommandList()->SetDescriptorHeaps(1, &core.srvHeap.heap);
 
 		dt = timer.dt();
 		cultime += dt;
@@ -149,11 +161,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		Matrix w = Matrix::GetProjectionMatrix(90, 0.1, 10);
 		Matrix v = Matrix::GetLookAtMatrix(from, Vec4(0, 1, 0,1), Vec4(0, 1, 0,0));*/
 		//Matrix w = Matrix::SetPositionMatrix(Vec4(0, 0, 0, 1));
-		gm->worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		Matrix::SetScaling(gm->worldMatrix, Vec3(0.02f, 0.02f, 0.02f));
-		Matrix viewMatrix = Matrix::GetLookAtMatrix(cameraPos, cameraTarget, cameraUp); 
-		Matrix projMatrix = Matrix::GetProjectionMatrix(45.0f, 1.f, 100.0f); 
-		gm->viewProjMatrix = viewMatrix.mul(projMatrix);
+		gm->worldMatrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)) * Matrix::translation(Vec3(5, 0, 0));
+		//gm->worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		//Matrix::SetScaling(gm->worldMatrix, Vec3(0.02f, 0.02f, 0.02f));
+		Matrix p = Matrix::perspective(0.01f, 10000.0f, 1920.0f / 1080.0f, 60.0f);
+		Vec3 from = Vec3(11 * cos(cultime), 5, 11 * sinf(cultime));
+		Matrix v = Matrix::lookAt(from, Vec3(0, 0, 0), Vec3(0, 1, 0));
+		//Matrix viewMatrix = Matrix::GetLookAtMatrix(cameraPos, cameraTarget, cameraUp); 
+		//Matrix projMatrix = Matrix::GetProjectionMatrix(45.0f, 0.1f, 100.0f);
+		gm->viewProjMatrix = v * p;
 
 		
 		//vsBuffers[0].update("W", &worldMatrix);
@@ -163,8 +179,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		//updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
 		//submitToCommandList(&core, pipes.pipelines[pipeName].vsConstantBuffers);
 		
-		staticMesh.draw(&core, psos, pipeName, pipes);
+		//staticMesh.draw(&core, myWorld->GetPSOManager(), staticPipe, myWorld->GetPipelines());
+		SkySphere.draw(&core, myWorld->GetPSOManager(), staticPipe, myWorld->GetPipelines());
 		
+
+		animMesh.draw(&core, myWorld->GetPSOManager(), animpipe, myWorld->GetPipelines(), &animatedInstance, dt);
 		
 		
 		core.finishFrame();

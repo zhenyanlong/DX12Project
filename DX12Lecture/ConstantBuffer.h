@@ -37,9 +37,9 @@ public:
 	{
 		ConstantBufferVariable cbVariable = constantBufferData[name];
 		unsigned int offset = offsetIndex * cbSizeInBytes;
-		//constantBuffer->Map(0, NULL, (void**)&buffer);
+		constantBuffer->Map(0, NULL, (void**)&buffer);
 		memcpy(&buffer[offset + cbVariable.offset], data, cbVariable.size);
-		//constantBuffer->Unmap(0, NULL);
+		constantBuffer->Unmap(0, NULL);
 	}
 	D3D12_GPU_VIRTUAL_ADDRESS getGPUAddress() const
 	{
@@ -55,7 +55,7 @@ public:
 		}
 	}
 
-	static std::vector<ConstantBuffer> reflect(Core* core, ID3DBlob* shader)
+	static std::vector<ConstantBuffer> reflect(Core* core, ID3DBlob* shader, std::map<std::string, int>* const textureBindPoints = nullptr)
 	{
 		std::vector<ConstantBuffer> buffers;
 		ID3D12ShaderReflection* reflection;
@@ -88,7 +88,21 @@ public:
 			buffer.init(core,totalSize);
 			buffers.push_back(buffer);
 		}
+		//std::map<std::string, int> textureBindPoints;
+		if (textureBindPoints != nullptr)
+		{
+			for (int i = 0; i < desc.BoundResources; i++)
+			{
+				D3D12_SHADER_INPUT_BIND_DESC bindDesc;
+				reflection->GetResourceBindingDesc(i, &bindDesc);
+				if (bindDesc.Type == D3D_SIT_TEXTURE)
+				{
+					textureBindPoints->insert({ bindDesc.Name, bindDesc.BindPoint });
+				}
+			}
+		}
 		
+
 		return buffers;
 	}
 

@@ -21,6 +21,7 @@ public:
 
 	std::vector<ConstantBuffer> psConstantBuffers;
 	std::vector<ConstantBuffer> vsConstantBuffers;
+	std::map<std::string, int> textureBindPoints;
 
 	ID3D12RootSignature* rootSignature;
 
@@ -95,6 +96,8 @@ public:
 
 	void loadPipeline(Core& core, std::string pipeName, PSOManager& psos, std::string vsfilename, std::string psfilename, const D3D12_INPUT_LAYOUT_DESC& inputDesc);
 
+	void loadPipeline(Core& core, std::string pipeName, PSOManager* const psos, std::string vsfilename, std::string psfilename, const D3D12_INPUT_LAYOUT_DESC& inputDesc);
+
 	~Pipelines()
 	{
 		for (auto it = pipelines.begin(); it != pipelines.end(); )
@@ -103,15 +106,6 @@ public:
 			pipelines.erase(it++);
 		}
 	}
-
-	/*Pipelines(const Pipelines& Layer) = delete;
-	Pipelines& operator=(const Pipelines& Layer) = delete;*/
-	// singleton 
-	/*inline static Pipelines& Get()
-	{
-		static Pipelines instance;
-		return instance;
-	}*/
 
 	// update constant buffer
 	static bool updateConstantBuffer(std::vector<ConstantBuffer>& constantBuffers, std::string bufferName, std::string dataName, void* data)
@@ -129,6 +123,12 @@ public:
 		findIt->update(dataName, data);
 
 		return true;
+	}
+	static void updateTexture(std::map<std::string, int>* const textureBindPoints, Core* core, std::string name, int heapOffset) {
+		UINT bindPoint = textureBindPoints->find(name)->second;
+		D3D12_GPU_DESCRIPTOR_HANDLE handle = core->srvHeap.gpuHandle;
+		handle.ptr = handle.ptr + (UINT64)(heapOffset - bindPoint) * (UINT64)core->srvHeap.incrementSize;
+		core->getCommandList()->SetGraphicsRootDescriptorTable(2, handle);
 	}
 
 	static void submitToCommandList(Core* core, std::vector<ConstantBuffer>& constantBuffers)

@@ -62,3 +62,24 @@ void Pipelines::loadPipeline(Core& core, std::string pipeName, PSOManager& psos,
 
 
 }
+
+void Pipelines::loadPipeline(Core& core, std::string pipeName, PSOManager* const psos, std::string vsfilename, std::string psfilename, const D3D12_INPUT_LAYOUT_DESC& inputDesc)
+{
+	auto findIt = pipelines.find(pipeName);
+	if (findIt != pipelines.end())
+	{
+		return;
+	}
+	// init pipe 
+	Pipeline pipe;
+	// init shaders
+	pipe.init(vsfilename, psfilename);
+	// init buffers
+	pipe.vsConstantBuffers = ConstantBuffer::reflect(&core, pipe.vertexShader);
+	pipe.psConstantBuffers = ConstantBuffer::reflect(&core, pipe.pixelShader, &pipe.textureBindPoints);
+	// init psos
+	psos->createPSO(&core, pipeName, pipe.vertexShader, pipe.pixelShader, inputDesc);
+	pipe.psoName = pipeName;
+
+	pipelines.insert({ pipeName, pipe });
+}

@@ -13,8 +13,29 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Resource Files\Textures">
-      <UniqueIdentifier>{7b8313b6-c65b-4fc9-b82a-53c44ade3bd7}</UniqueIdentifier>
+    <Filter Include="Resource Files\model">
+      <UniqueIdentifier>{e3347d2c-d795-4384-9d22-0a9df592c2ba}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Levels">
+      <UniqueIdentifier>{199d3bbb-a565-4c5c-ad75-e77f6f1dc857}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Actors">
+      <UniqueIdentifier>{c070ff76-d767-4eb6-825f-34f82d88fcc9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Actors">
+      <UniqueIdentifier>{1809402e-e3ef-4c7e-a917-0a55864a8c29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Levels">
+      <UniqueIdentifier>{a8e6c08a-dae4-48e6-9d61-65223e046024}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Models">
+      <UniqueIdentifier>{d9cf603b-f9ec-472c-bef3-38645af0bc01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Models\Textures">
+      <UniqueIdentifier>{4533261a-97d7-41f2-8fd0-fde9a4206c1e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{f5fa207b-4b11-441f-a2fd-47d743ca3594}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -51,6 +72,30 @@
     <ClInclude Include="GEMLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="World.h">
+      <Filter>Header Files\Levels</Filter>
+    </ClInclude>
+    <ClInclude Include="Actors\Test.h">
+      <Filter>Header Files\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="Actor.h">
+      <Filter>Header Files\Actors</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneralEvent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DescriptorHeap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Window.cpp">
@@ -80,41 +125,77 @@
     <ClCompile Include="VertexLayoutCache.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Actors\Test.cpp">
+      <Filter>Source Files\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="Actor.cpp">
+      <Filter>Source Files\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="World.cpp">
+      <Filter>Source Files\Levels</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneralEvent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DescriptorHeap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="VertexShader.hlsl">
-      <Filter>Resource Files</Filter>
+    <FxCompile Include="Shaders\VertexShaderAnim.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
     <FxCompile Include="PixelShader.hlsl">
-      <Filter>Resource Files</Filter>
+      <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="Shaders\VertexShaderAnim.hlsl">
-      <Filter>Resource Files</Filter>
+    <FxCompile Include="PixelShaderTextured.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="VertexShader.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Resources\acacia_003.gem">
-      <Filter>Resource Files</Filter>
+    <None Include="Resources\model\Bull-dark.gem">
+      <Filter>Resource Files\model</Filter>
+    </None>
+    <None Include="Models\acacia_003.gem">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="Models\TRex.gem">
+      <Filter>Resource Files\Models</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Resources\Textures\Textures1_ALB.png">
-      <Filter>Resource Files\Textures</Filter>
+    <Image Include="Models\Textures\Textures1_ALB.png">
+      <Filter>Resource Files\Models\Textures</Filter>
     </Image>
-    <Image Include="Resources\Textures\Textures1_NH.png">
-      <Filter>Resource Files\Textures</Filter>
+    <Image Include="Models\Textures\Textures1_NH.png">
+      <Filter>Resource Files\Models\Textures</Filter>
     </Image>
-    <Image Include="Resources\Textures\Textures1_RMAX.png">
-      <Filter>Resource Files\Textures</Filter>
+    <Image Include="Models\Textures\Textures1_RMAX.png">
+      <Filter>Resource Files\Models\Textures</Filter>
     </Image>
-    <Image Include="Resources\Textures\T-rex_Base_Color_alb.png">
-      <Filter>Resource Files\Textures</Filter>
+    <Image Include="Models\Textures\T-rex_Base_Color_alb.png">
+      <Filter>Resource Files\Models\Textures</Filter>
     </Image>
-    <Image Include="Resources\Textures\T-rex_Base_Color_nh.png">
-      <Filter>Resource Files\Textures</Filter>
+    <Image Include="Models\Textures\T-rex_Base_Color_nh.png">
+      <Filter>Resource Files\Models\Textures</Filter>
     </Image>
-    <Image Include="Resources\Textures\T-rex_Base_Color_rmax.png">
-      <Filter>Resource Files\Textures</Filter>
+    <Image Include="Models\Textures\T-rex_Base_Color_rmax.png">
+      <Filter>Resource Files\Models\Textures</Filter>
+    </Image>
+    <Image Include="Models\Textures\citrus_orchard_road_puresky.png">
+      <Filter>Resource Files\Models\Textures</Filter>
+    </Image>
+    <Image Include="Models\Textures\sky.png">
+      <Filter>Resource Files\Models\Textures</Filter>
     </Image>
   </ItemGroup>
 </Project>
