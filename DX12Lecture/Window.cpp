@@ -11,6 +11,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	{
 	case WM_KEYDOWN:
 	{
+		if (!window->keys[(unsigned int)wParam])
+			window->keyJustPressed[(unsigned int)wParam] = true;
 		window->keys[(unsigned int)wParam] = true;
 		return 0;
 	}
@@ -61,6 +63,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 void Window::processMessages()
 {
+	resetKeyJustPressed();
 	MSG msg;
 	ZeroMemory(&msg, sizeof(MSG));
 	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {

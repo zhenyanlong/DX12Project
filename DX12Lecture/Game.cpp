@@ -15,6 +15,12 @@
 #define WIDTH 1280
 #define HEIGHT 720
 
+// FPS相机参数（重点调整）
+const float CAMERA_MOVE_SPEED = 15.0f;    // 移动速度（单位/秒）
+const float MOUSE_SENSITIVITY = 0.15f;    // 鼠标灵敏度（弧度/像素，越小越慢）
+const bool LOCK_MOUSE_ON_START = true;    // 启动时自动锁定鼠标
+
+
 class Timer
 {
 private:
@@ -140,11 +146,52 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	float cultime=0;
 	float dt;
 
+	// ===================== FPS相机核心状态 =====================
+	Vec3 cameraPos = Vec3(40.0f, 15.0f, 0.0f);  // 相机初始位置（FPS中位置由WASD控制）
+	float cameraYaw = -M_PI / 2;                  // 偏航角（初始朝向Z轴负方向，对应FPS初始向前）
+	float cameraPitch = 0.0f;                   // 俯仰角（初始水平）
+	bool mouseLocked = LOCK_MOUSE_ON_START;     // 鼠标是否锁定
+	POINT windowCenter;                         // 窗口中心坐标（用于鼠标重置）
+
+	// 计算窗口中心（相对于屏幕）
+	RECT windowRect;
+	GetWindowRect(win.hwnd, &windowRect);
+	windowCenter.x = windowRect.left + WIDTH / 2;
+	windowCenter.y = windowRect.top + HEIGHT / 2;
+
+	// 初始锁定鼠标
+	if (mouseLocked)
+	{
+		ClipCursor(&windowRect);  // 锁定鼠标在窗口内
+		ShowCursor(FALSE);        // 隐藏鼠标指针
+		SetCursorPos(windowCenter.x, windowCenter.y); // 重置鼠标到中心
+	}
 	while (true)
 	{
 		//core.resetCommandList();
 
 		win.processMessages();
+
+		GetWindowRect(win.hwnd, &windowRect);
+		windowCenter.x = windowRect.left + WIDTH / 2;
+		windowCenter.y = windowRect.top + HEIGHT / 2;
+		// 按ESC键切换鼠标锁定状态
+		if (win.keys[VK_ESCAPE] && win.keyJustPressed[VK_ESCAPE])
+		{
+			mouseLocked = !mouseLocked;
+			ShowCursor(mouseLocked ? FALSE : TRUE);
+			if (mouseLocked)
+			{
+				GetWindowRect(win.hwnd, &windowRect);
+				ClipCursor(&windowRect);
+				SetCursorPos(windowCenter.x, windowCenter.y);
+			}
+			else
+			{
+				ClipCursor(NULL); // 解锁鼠标
+			}
+			win.keyJustPressed[VK_ESCAPE] = false; // 防止连续触发
+		}
 
 		core.beginFrame();
 
@@ -153,33 +200,62 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 		dt = timer.dt();
 		cultime += dt;
-		Vec4 cameraPos(40 * cos(cultime), 15.0f,40 * sin(cultime), 1.0f); 
-		Vec4 cameraTarget(0.0f, 1.0f, 0.0f, 1.0f);                  
-		Vec4 cameraUp(0.0f, 1.0f, 0.0f, 0.0f);                      
+		// ===================== 1. 鼠标控制视角（FPS核心） =====================
+		if (mouseLocked ) // 窗口激活时才响应
+		{
+			POINT currentMousePos;
+			GetCursorPos(&currentMousePos);
 
-		/*Vec4 from = Vec4(11 * cos(0), 5, 11 * sinf(0), 1.f);
-		Matrix w = Matrix::GetProjectionMatrix(90, 0.1, 10);
-		Matrix v = Matrix::GetLookAtMatrix(from, Vec4(0, 1, 0,1), Vec4(0, 1, 0,0));*/
-		//Matrix w = Matrix::SetPositionMatrix(Vec4(0, 0, 0, 1));
-		gm->worldMatrix = Matrix::scaling(Vec3(0.01f, 0.01f, 0.01f)) * Matrix::translation(Vec3(5, 0, 0));
-		//gm->worldMatrix = Matrix::SetPositionMatrix(Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		//Matrix::SetScaling(gm->worldMatrix, Vec3(0.02f, 0.02f, 0.02f));
-		Matrix p = Matrix::perspective(0.01f, 10000.0f, 1920.0f / 1080.0f, 60.0f);
-		Vec3 from = Vec3(11 * cos(cultime), 5, 11 * sinf(cultime));
-		Matrix v = Matrix::lookAt(from, Vec3(0, 0, 0), Vec3(0, 1, 0));
-		//Matrix viewMatrix = Matrix::GetLookAtMatrix(cameraPos, cameraTarget, cameraUp); 
-		//Matrix projMatrix = Matrix::GetProjectionMatrix(45.0f, 0.1f, 100.0f);
-		gm->viewProjMatrix = v * p;
+			// 计算鼠标相对于窗口中心的偏移（delta）
+			int mouseDeltaX = currentMousePos.x - windowCenter.x;
+			int mouseDeltaY = currentMousePos.y - windowCenter.y;
 
+			// 重置鼠标到窗口中心（关键：避免指针移出窗口）
+			SetCursorPos(windowCenter.x, windowCenter.y);
+
+			// 更新偏航角（Yaw）和俯仰角（Pitch）
+			cameraYaw -= mouseDeltaX * MOUSE_SENSITIVITY * 0.0174533f; // 转弧度
+			cameraPitch -= mouseDeltaY * MOUSE_SENSITIVITY * 0.0174533f;
+
+			// 限制俯仰角（-89° ~ +89°），避免视角翻转
+			cameraPitch = clamp(cameraPitch, (float) - M_PI / 2 + 0.01f, (float)M_PI / 2 - 0.01f);
+
+			// 根据欧拉角计算相机朝向（FPS中相机上方向固定为世界Y轴）
+			Vec3 cameraForward;
+			cameraForward.x = cos(cameraYaw) * cos(cameraPitch);
+			cameraForward.y = sin(cameraPitch);
+			cameraForward.z = sin(cameraYaw) * cos(cameraPitch);
+			cameraForward = cameraForward.normalize();
+
+			// 计算相机右方向（用于WASD横向移动）
+			Vec3 cameraRight = Cross(cameraForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
+			Vec3 cameraUp = Vec3(0.0f, 1.0f, 0.0f); // FPS固定上方向为世界Y轴
+
+			// ===================== 2. WASD+QE控制相机移动 =====================
+			// W/S：沿相机朝向前后移动
+			if (win.keys['W']) cameraPos += cameraForward * CAMERA_MOVE_SPEED * dt;
+			if (win.keys['S']) cameraPos -= cameraForward * CAMERA_MOVE_SPEED * dt;
+			// A/D：沿相机右方向左右平移
+			if (win.keys['A']) cameraPos += cameraRight * CAMERA_MOVE_SPEED * dt;
+			if (win.keys['D']) cameraPos -= cameraRight * CAMERA_MOVE_SPEED * dt;
+			// Q/E：垂直上下移动（世界Y轴方向）
+			if (win.keys['Q']) cameraPos.y -= CAMERA_MOVE_SPEED * dt;
+			if (win.keys['E']) cameraPos.y += CAMERA_MOVE_SPEED * dt;
+
+			// ===================== 3. 更新观察矩阵 =====================
+			Matrix p = Matrix::perspective(0.01f, 10000.0f, (float)WIDTH / HEIGHT, 45.0f);
+			Matrix v = Matrix::lookAt(cameraPos, cameraPos + cameraForward, cameraUp);
+			gm->viewProjMatrix = v * p;
+		}
+		else
+		{
+			// 未锁定鼠标时，保持初始视角
+			/*Matrix p = Matrix::perspective(0.01f, 10000.0f, (float)WIDTH / HEIGHT, 45.0f);
+			Matrix v = Matrix::lookAt(cameraPos, Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
+			gm->viewProjMatrix = v * p;*/
+		}
 		
-		//vsBuffers[0].update("W", &worldMatrix);
-		//vsBuffers[0].update("VP", &viewProjMatrix);
-		
-		//updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &gm->worldMatrix);
-		//updateConstantBuffer(pipes.pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
-		//submitToCommandList(&core, pipes.pipelines[pipeName].vsConstantBuffers);
-		
-		//staticMesh.draw(&core, myWorld->GetPSOManager(), staticPipe, myWorld->GetPipelines());
+
 		SkySphere.draw(&core, myWorld->GetPSOManager(), staticPipe, myWorld->GetPipelines());
 		
 

@@ -15,6 +15,7 @@ public:
 	// keybard and mouse
 public:
 	bool keys[256];
+	bool keyJustPressed[256] = { false };        // 按键刚按下（仅触发一次）
 	int mousex;
 	int mousey;
 	bool mouseButtons[3];
@@ -31,7 +32,12 @@ public:
 		mousey = y;
 	}
 
-	
+	// 重置“刚按下”状态（每帧调用）
+	void resetKeyJustPressed()
+	{
+		for (int i = 0; i < 256; i++)
+			keyJustPressed[i] = false;
+	}
 	
 };
 
