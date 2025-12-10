@@ -1,6 +1,7 @@
 #include "Mesh.h"
 #include "GEMLoader.h"
 #include "TextureManager.h"
+#include "World.h"
 void Mesh::init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
 	unsigned int* indices, int numIndices)
 
@@ -66,6 +67,14 @@ void Mesh::draw(Core* core)
 	core->getCommandList()->IASetIndexBuffer(&ibView);
 	core->getCommandList()->DrawIndexedInstanced(numMeshIndices, 1, 0, 0, 0);
 
+}
+
+void Mesh::drawInstanced(Core* core, int instanceCount)
+{
+	core->getCommandList()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	core->getCommandList()->IASetVertexBuffers(0, 1, &vbView);
+	core->getCommandList()->IASetIndexBuffer(&ibView);
+	core->getCommandList()->DrawIndexedInstanced(numMeshIndices, instanceCount, 0, 0, 0);
 }
 
 void Mesh::CreatePlane(Core* core, Mesh* plane)
@@ -226,6 +235,7 @@ void StaticMesh::CreateFromGEM(Core* core, std::string filename)
 
 void StaticMesh::draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes)
 {
+	World* myWorld = World::Get();
 	GeneralMatrix* gm = GeneralMatrix::Get();
 	
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &m_worldPosMat);
@@ -236,9 +246,40 @@ void StaticMesh::draw(Core* core, PSOManager* const psos, std::string pipeName, 
 	for (int i=0;i<meshes.size();i++)
 	{
 		core->beginRenderPass();
-		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
+		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset, myWorld->GetCore()->srvTableRootIndex);
 		psos->bind(core, pipes->pipelines[pipeName].psoName);
 		meshes[i].draw(core);
+	}
+}
+
+void StaticMesh::drawInstances(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, std::vector<Matrix>* const instanceMatrices, int instanceCount)
+{
+	
+	GeneralMatrix* gm = GeneralMatrix::Get();
+
+	// 1. 更新常量缓冲区：视图投影矩阵（VP）
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"staticMeshBuffer", "VP", &gm->viewProjMatrix);
+
+	// 2. 更新实例化常量缓冲区：实例矩阵数组
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"instanceBuffer", "instanceMatrices", instanceMatrices->data());
+
+	// 3. 提交常量缓冲区到命令列表
+	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
+
+	// 4. 绑定纹理和PSO
+	TextureManager* texs = TextureManager::Get();
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		core->beginRenderPass();
+		// 更新纹理绑定
+		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints,
+			core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
+		// 绑定实例化PSO
+		psos->bind(core, pipes->pipelines[pipeName].psoName);
+		// 5. 实例化绘制：DrawIndexedInstanced（索引数量，实例数量，起始索引，起始顶点，起始实例）
+		meshes[i].drawInstanced(core, instanceCount);
 	}
 }
 

@@ -16,16 +16,48 @@ void SkyBoxActor::draw()
 	skybox->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 }
 
-TreeActor::TreeActor()
+TreeActor::TreeActor(int count)
 {
+	instanceCount = count;
 	World* myWorld = World::Get();
 	willow = new StaticMesh(myWorld->GetCore(), "Models/willow.gem");
 	//willow->SetWorldScaling(Vec3(1.f, 1.f, 1.f));
+	// 生成50个实例的矩阵（分布在半径50的圆内，高度0~5）
+	generateInstanceMatrices(instanceCount, 50.0f, 5.0f);
+}
+
+void TreeActor::generateInstanceMatrices(int count, float radius, float height)
+{
+	instanceMatrices.clear();
+	for (int i = 0; i < count; i++)
+	{
+		// 随机极坐标位置
+		float angle = (float)rand() / RAND_MAX * 2 * M_PI;
+		float r = (float)rand() / RAND_MAX * radius;
+		float x = r * cos(angle);
+		float z = r * sin(angle);
+		float y = (float)rand() / RAND_MAX * height;
+
+		// 随机缩放（0.8~1.2倍）
+		float scale = 0.8f + (float)rand() / RAND_MAX * 0.4f;
+
+		// 随机旋转（Y轴）
+		float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
+
+		// 构建实例的世界矩阵：缩放 -> 旋转 -> 平移
+		Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
+		Matrix rotMat = Matrix::rotateY(rotY);
+		Matrix transMat = Matrix::translation(Vec3(x, y, z));
+		Matrix instanceMat = scaleMat * rotMat * transMat;
+
+		instanceMatrices.push_back(instanceMat);
+	}
 }
 
 void TreeActor::draw()
 {
 	World* myWorld = World::Get();
 	
-	willow->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+	//willow->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
 }

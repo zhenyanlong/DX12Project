@@ -112,6 +112,7 @@ public:
 
 	DescriptorHeap srvHeap;
 
+	UINT srvTableRootIndex = 0;
 	~Core()
 	{
 		rootSignature->Release();
@@ -270,13 +271,21 @@ public:
 		//root signature 
 		std::vector<D3D12_ROOT_PARAMETER> parameters;
 		
-		// cbv
+		// VS CBV : b0 Index 0
 		D3D12_ROOT_PARAMETER rootParameterCBVS;
 		rootParameterCBVS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameterCBVS.Descriptor.ShaderRegister = 0; // Register(b0)
 		rootParameterCBVS.Descriptor.RegisterSpace = 0;
 		rootParameterCBVS.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		parameters.push_back(rootParameterCBVS);
+		// VS CBV : b1 Index 1
+		D3D12_ROOT_PARAMETER rootParameterCBVS_b1;
+		rootParameterCBVS_b1.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameterCBVS_b1.Descriptor.ShaderRegister = 1; // Register(b1)
+		rootParameterCBVS_b1.Descriptor.RegisterSpace = 0;
+		rootParameterCBVS_b1.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		parameters.push_back(rootParameterCBVS_b1);
+		// PS CBV : b0 Index 2
 		D3D12_ROOT_PARAMETER rootParameterCBPS;
 		rootParameterCBPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameterCBPS.Descriptor.ShaderRegister = 0; // Register(b0)
@@ -284,7 +293,7 @@ public:
 		rootParameterCBPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		parameters.push_back(rootParameterCBPS);
 
-		//srv
+		// PS SRV : s0 Index 3
 		D3D12_DESCRIPTOR_RANGE srvRange = {};
 		srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 		srvRange.NumDescriptors = 8; // number of SRVs (t0¨Ct7)
@@ -297,6 +306,7 @@ public:
 		rootParameterTex.DescriptorTable.pDescriptorRanges = &srvRange;
 		rootParameterTex.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		parameters.push_back(rootParameterTex);
+		srvTableRootIndex = parameters.size() - 1;
 		// sampler
 		D3D12_STATIC_SAMPLER_DESC staticSampler = {};
 		staticSampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;

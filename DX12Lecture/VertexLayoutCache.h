@@ -36,6 +36,9 @@ public:
 		static const D3D12_INPUT_LAYOUT_DESC desc = { inputLayoutAnimated, 6 };
 		return desc;
 	}
-
+	static const D3D12_INPUT_LAYOUT_DESC& getInstanceLayout() {
+		// 与静态布局一致，因为使用SV_InstanceID（系统自动提供）
+		return getStaticLayout();
+	}
 };
 

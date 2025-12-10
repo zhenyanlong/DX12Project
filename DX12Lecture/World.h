@@ -36,9 +36,11 @@ public:
 };
 
 const std::string STATIC_PIPE = "staticMesh";
+const std::string STATIC_INSTANCE_PIPE = "StaticInstance";
 const std::string ANIM_PIPE = "Animation";
 const std::string VS_PATH = "VertexShader.hlsl";
 const std::string VS_ANIM_PATH = "Shaders/VertexShaderAnim.hlsl";
+const std::string VS_INS_PATH = "Shaders/VertexShaderInstanced.hlsl";
 const std::string PS_PATH = "PixelShaderTextured.hlsl";
 
 class World
@@ -55,6 +57,7 @@ class World
 		m_pipes = new Pipelines();
 		m_pipes->loadPipeline(core, STATIC_PIPE, m_psos, VS_PATH, PS_PATH, VertexLayoutCache::getStaticLayout());
 		m_pipes->loadPipeline(core, ANIM_PIPE, m_psos, VS_ANIM_PATH, PS_PATH, VertexLayoutCache::getAnimatedLayout());
+		m_pipes->loadPipeline(core, STATIC_INSTANCE_PIPE, m_psos, VS_INS_PATH, PS_PATH, VertexLayoutCache::getInstanceLayout());
 	}
 	// core
 	Core* core;
@@ -67,7 +70,7 @@ class World
 	// Timer
 	Timer timer;
 	float cultime = 0;
-	float dt;
+	float dt = 0;
 public:
 	// delete copy
 	World(const World&) = delete;

@@ -249,6 +249,8 @@ public:
 
 	void draw(Core* core);
 
+	void drawInstanced(Core* core, int instanceCount);
+
 	static void CreatePlane(Core* core, Mesh* plane);
 
 	static void CreateCube(Core* core, Mesh* cube);
@@ -321,6 +323,7 @@ public:
 	void CreateFromSphere(Core* core, int rings, int segments, float radius, std::string skyPath);
 
 	void draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes);
+	void drawInstances(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, std::vector<Matrix>* const instanceMatrices, int count);
 };
 
 class AnimatedModel : public WorldPosParam
