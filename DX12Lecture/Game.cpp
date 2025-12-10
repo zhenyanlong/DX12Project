@@ -9,48 +9,19 @@
 #include "algorithm"
 #include "World.h"
 #include "TextureManager.h"
+#include "World.h"
 //#include "GamesEngineeringBase.h"
 #define M_PI       3.14159265358979323846   // pi
 
 #define WIDTH 1280
 #define HEIGHT 720
 
-// FPS相机参数（重点调整）
+// Camera Parameters
 const float CAMERA_MOVE_SPEED = 15.0f;    // 移动速度（单位/秒）
 const float MOUSE_SENSITIVITY = 0.15f;    // 鼠标灵敏度（弧度/像素，越小越慢）
 const bool LOCK_MOUSE_ON_START = true;    // 启动时自动锁定鼠标
 
 
-class Timer
-{
-private:
-	LARGE_INTEGER freq;   // Frequency of the performance counter
-	LARGE_INTEGER start;  // Starting time
-
-public:
-	// Constructor that initializes the frequency
-	Timer()
-	{
-		QueryPerformanceFrequency(&freq);
-		reset();
-	}
-
-	// Resets the timer
-	void reset()
-	{
-		QueryPerformanceCounter(&start);
-	}
-
-	// Returns the elapsed time since the last reset in seconds. Note this should only be called once per frame as it resets the timer.
-	float dt()
-	{
-		LARGE_INTEGER cur;
-		QueryPerformanceCounter(&cur);
-		float value = static_cast<float>(cur.QuadPart - start.QuadPart) / freq.QuadPart;
-		reset();
-		return value;
-	}
-};
 
 
 
@@ -101,19 +72,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	GeneralMatrix* gm = GeneralMatrix::Create();
 	TextureManager* textures = TextureManager::Create();
 
-	//Texture tex(&core, "Models/Textures/T-rex_Base_Color_alb.png");
+	// load new level with shared ptr
+	myWorld->LoadNewLevel(std::make_shared<TestMap>());
+
 	ScreenSpaceTriangle tri;
 	// init mesh
 	//Mesh mesh;
 	//Mesh::CreatePlane(&core, &mesh);
 	//Mesh::CreateCube(&core, &mesh);
 	//Mesh::CreateSphere(&core, &mesh, 16, 24, 5);
-	StaticMesh staticMesh(&core, "Models/acacia_003.gem");
+	//StaticMesh staticMesh(&core, "Models/acacia_003.gem");
 	AnimatedModel animMesh(&core, "Models/TRex.gem");
-	StaticMesh SkySphere;
+	/*StaticMesh SkySphere;
 	SkySphere.CreateFromSphere(&core, 16, 24, 5, "Models/Textures/sky.png");
 	SkySphere.SetWorldScaling(Vec3(1000.f, 1000.f, 1000.f));
-	SkySphere.SetWorldRotationRadian(Vec3(M_PI, 0.f, 0.f));
+	SkySphere.SetWorldRotationRadian(Vec3(M_PI, 0.f, 0.f));*/
 	//std::vector<Mesh> meshes;
 	//Mesh::CreateGEM(&core, staticMesh.meshes, "Resources/acacia_003.gem");
 	//init general matrix
@@ -142,9 +115,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		constBufferCPU2.lights[i] = Vec4(0,0,0,0);
 	}
 
-	Timer timer;
-	float cultime=0;
-	float dt;
+	
 
 	// ===================== FPS相机核心状态 =====================
 	Vec3 cameraPos = Vec3(40.0f, 15.0f, 0.0f);  // 相机初始位置（FPS中位置由WASD控制）
@@ -168,10 +139,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 	while (true)
 	{
-		//core.resetCommandList();
-
+		//Process messages 
 		win.processMessages();
-
+		// update time
+		myWorld->UpdateTime();
+		float dt = myWorld->GetDeltatime();
+		// Process mouse control
 		GetWindowRect(win.hwnd, &windowRect);
 		windowCenter.x = windowRect.left + WIDTH / 2;
 		windowCenter.y = windowRect.top + HEIGHT / 2;
@@ -198,8 +171,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		core.getCommandList()->SetGraphicsRootSignature(core.rootSignature);
 		core.getCommandList()->SetDescriptorHeaps(1, &core.srvHeap.heap);
 
-		dt = timer.dt();
-		cultime += dt;
+		
+		// begin play
+		
 		// ===================== 1. 鼠标控制视角（FPS核心） =====================
 		if (mouseLocked ) // 窗口激活时才响应
 		{
@@ -255,11 +229,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			gm->viewProjMatrix = v * p;*/
 		}
 		
-
-		SkySphere.draw(&core, myWorld->GetPSOManager(), staticPipe, myWorld->GetPipelines());
+		// draw
+		myWorld->ExecuteDraw();
+		//SkySphere.draw(&core, myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 		
 
-		animMesh.draw(&core, myWorld->GetPSOManager(), animpipe, myWorld->GetPipelines(), &animatedInstance, dt);
+		animMesh.draw(&core, myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), &animatedInstance, myWorld->GetDeltatime());
 		
 		
 		core.finishFrame();

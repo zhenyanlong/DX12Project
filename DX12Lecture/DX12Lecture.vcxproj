@@ -70,6 +70,12 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -137,6 +143,7 @@
     <ClInclude Include="GamesEngineeringBase.h" />
     <ClInclude Include="GEMLoader.h" />
     <ClInclude Include="GeneralEvent.h" />
+    <ClInclude Include="Levels\Level.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="Pipeline.h" />
     <ClInclude Include="PSOManager.h" />
@@ -157,6 +164,7 @@
     <ClCompile Include="DescriptorHeap.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GeneralEvent.cpp" />
+    <ClCompile Include="Levels\Level.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PSOManager.cpp" />

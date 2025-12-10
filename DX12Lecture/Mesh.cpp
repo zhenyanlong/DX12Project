@@ -206,6 +206,8 @@ void StaticMesh::CreateFromGEM(Core* core, std::string filename)
 {
 	GEMLoader::GEMModelLoader loader;
 	std::vector<GEMLoader::GEMMesh> gemmeshes;
+	TextureManager* texMgr = TextureManager::Get();
+
 	loader.load(filename, gemmeshes);
 	for (int i = 0; i < gemmeshes.size(); i++) {
 		Mesh mesh;
@@ -215,6 +217,8 @@ void StaticMesh::CreateFromGEM(Core* core, std::string filename)
 			memcpy(&v, &gemmeshes[i].verticesStatic[j], sizeof(STATIC_VERTEX));
 			vertices.push_back(v);
 		}
+		textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
+		texMgr->loadTexture(core, gemmeshes[i].material.find("albedo").getValue());
 		mesh.init(core, vertices, gemmeshes[i].indices);
 		meshes.push_back(mesh);
 	}

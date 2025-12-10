@@ -44,7 +44,7 @@ public:
 
 		// 加载新纹理并存储
 		auto texture = new Texture(core, filename);
-		//texture->load(core, filename);
+		
 		Texture* ptr = texture;
 		textures[filename] = texture;
 		return ptr;
