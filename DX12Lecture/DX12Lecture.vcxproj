@@ -116,6 +116,9 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <FxCompile>
+      <ShaderModel>6.6</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -133,6 +136,9 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <FxCompile>
+      <ShaderModel>6.6</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
@@ -149,6 +155,7 @@
     <ClInclude Include="PSOManager.h" />
     <ClInclude Include="ScreenSpaceTriangle.h" />
     <ClInclude Include="stb_image.h" />
+    <ClInclude Include="StringUtils.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Vec3.h" />
@@ -169,6 +176,7 @@
     <ClCompile Include="Pipeline.cpp" />
     <ClCompile Include="PSOManager.cpp" />
     <ClCompile Include="ScreenSpaceTriangle.cpp" />
+    <ClCompile Include="StringUtils.cpp" />
     <ClCompile Include="Texture.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="VertexLayoutCache.cpp" />
@@ -196,6 +204,16 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
     </FxCompile>
+    <FxCompile Include="Shaders\PixelShaderLightTextured.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">PS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">PS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+    </FxCompile>
     <FxCompile Include="Shaders\VertexShaderAnim.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
@@ -205,6 +223,20 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="Shaders\VertexShaderBitangent.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">6.6</ShaderModel>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="Shaders\VertexShaderInstanced.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
@@ -216,6 +248,14 @@
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
     </FxCompile>
+    <FxCompile Include="Shaders\VertexShaderInstBit.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Vertex</ShaderType>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
+      <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
+    </FxCompile>
     <FxCompile Include="VertexShader.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
@@ -225,6 +265,11 @@
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">6.6</ShaderModel>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">VS</EntryPointName>
       <EntryPointName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">VS</EntryPointName>
+      <FileType>Document</FileType>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </ExcludedFromBuild>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>

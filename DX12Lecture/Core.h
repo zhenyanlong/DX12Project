@@ -285,10 +285,10 @@ public:
 		rootParameterCBVS_b1.Descriptor.RegisterSpace = 0;
 		rootParameterCBVS_b1.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		parameters.push_back(rootParameterCBVS_b1);
-		// PS CBV : b0 Index 2
+		// PS CBV : b2 Index 2
 		D3D12_ROOT_PARAMETER rootParameterCBPS;
 		rootParameterCBPS.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameterCBPS.Descriptor.ShaderRegister = 0; // Register(b0)
+		rootParameterCBPS.Descriptor.ShaderRegister = 2; // Register(b2)
 		rootParameterCBPS.Descriptor.RegisterSpace = 0;
 		rootParameterCBPS.ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 		parameters.push_back(rootParameterCBPS);

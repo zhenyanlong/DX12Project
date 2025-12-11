@@ -24,9 +24,10 @@ struct VS_INPUT
 struct PS_INPUT
 {
     float4 Pos : SV_Position;
-    float3 Normal : NORMAL;
-    float3 Tangent : TANGENT;
     float2 TexCoords : TEXCOORD;
+    float3 WorldNormal : NORMAL;
+    float3 WorldTangent : TANGENT;
+    float3 WorldBitangent : BITANGENT;
 };
 
 float3x3 Inverse3x3(float3x3 m)
@@ -37,9 +38,9 @@ float3x3 Inverse3x3(float3x3 m)
         return float3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
 
     float3x3 adj;
-    adj[0] = cross(m[1], m[2]);
-    adj[1] = cross(m[2], m[0]);
-    adj[2] = cross(m[0], m[1]);
+    adj[0] = cross(m[1], m[2]); 
+    adj[1] = cross(m[2], m[0]); 
+    adj[2] = cross(m[0], m[1]); 
     
     adj = transpose(adj);
     
@@ -54,9 +55,12 @@ PS_INPUT VS(VS_INPUT input)
     float4 worldPos = mul(input.Pos, instanceW);
     output.Pos = mul(worldPos, VP); // 世界->裁剪（VP=View*Proj）
     // 法线/切线的世界空间变换
-    float3x3 normalMatrix = transpose(Inverse3x3((float3x3) W));
-    output.Normal = mul(input.Normal, normalMatrix);
-    output.Tangent = mul(input.Tangent, normalMatrix);
+    float3x3 normalMatrix = transpose(Inverse3x3((float3x3) instanceW));
+    //float3x3 normalMatrix = (float3x3) instanceW;
+    output.WorldNormal = normalize(mul(input.Normal, normalMatrix));
+    output.WorldTangent = normalize(mul(input.Tangent, normalMatrix));
     output.TexCoords = input.TexCoords;
+    // 副切线：法线×切线，考虑Tangent.w的手性
+    output.WorldBitangent = normalize(cross(output.WorldNormal, output.WorldTangent) * 1.0f);
     return output;
 }

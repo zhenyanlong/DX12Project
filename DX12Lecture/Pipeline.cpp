@@ -1,5 +1,6 @@
 #include "Pipeline.h"
 #include "VertexLayoutCache.h"
+#include "Mesh.h"
 void Pipeline::init(std::string vsPath, std::string psPath)
 {
 	vertexShaderStr = loadstr(vsPath);
@@ -53,7 +54,7 @@ void Pipelines::loadPipeline(Core& core, std::string pipeName, PSOManager& psos,
 	pipe.init(vsfilename, psfilename);
 	// init buffers
 	pipe.vsConstantBuffers = ConstantBuffer::reflect(&core, pipe.vertexShader);
-	pipe.psConstantBuffers = ConstantBuffer::reflect(&core, pipe.pixelShader);
+	pipe.psConstantBuffers = ConstantBuffer::reflect(&core, pipe.pixelShader, &pipe.textureBindPoints);
 	// init psos
 	psos.createPSO(&core, pipeName, pipe.vertexShader, pipe.pixelShader, inputDesc);
 	pipe.psoName = pipeName;
@@ -81,5 +82,44 @@ void Pipelines::loadPipeline(Core& core, std::string pipeName, PSOManager* const
 	psos->createPSO(&core, pipeName, pipe.vertexShader, pipe.pixelShader, inputDesc);
 	pipe.psoName = pipeName;
 
-	pipelines.insert({ pipeName, pipe });
+	pipelines.insert({ pipeName, pipe });				   
+}
+
+void Pipelines::updateBaseStaticBuffer(const std::string& pipeName, Pipelines* pipes, Matrix worldPosMat)
+{
+	GeneralMatrix* gm = GeneralMatrix::Get();
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"staticMeshBuffer", "W", &worldPosMat);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"staticMeshBuffer", "VP", &gm->viewProjMatrix);
+}
+
+void Pipelines::updateInstanceBuffer(const std::string& pipeName, Pipelines* pipes, std::vector<Matrix>* const instanceMatrices)
+{
+	GeneralMatrix* gm = GeneralMatrix::Get();
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"staticMeshBuffer", "VP", &gm->viewProjMatrix);
+	if (instanceMatrices != nullptr)
+	{
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+			"instanceBuffer", "instanceMatrices", instanceMatrices->data());
+	}
+}
+
+void Pipelines::updateLightBuffer(const std::string& pipeName, Pipelines* pipes)
+{
+
+	Vec3 lightDir = Vec3(1.0f, 1.0f, 1.0f).normalize();
+	float lightIntensity = 1.0f;
+	Vec3 lightColor = Vec3(1.0f, 1.0f, 1.0f);
+	float roughness = 0.3f;
+
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].psConstantBuffers,
+		"PSLightBuffer", "lightDir", &lightDir);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].psConstantBuffers,
+		"PSLightBuffer", "lightIntensity", &lightIntensity);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].psConstantBuffers,
+		"PSLightBuffer", "lightColor", &lightColor);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].psConstantBuffers,
+		"PSLightBuffer", "roughness", &roughness);
 }

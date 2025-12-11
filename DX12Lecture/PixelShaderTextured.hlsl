@@ -18,5 +18,5 @@ float4 PS(PS_INPUT input) : SV_Target0
     {
         discard;
     }
-    return float4(sRGB.rgb, 1.0);
+    return float4(colour.rgb, 1.0);
 }

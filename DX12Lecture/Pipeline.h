@@ -7,7 +7,7 @@
 #include <sstream>
 #include <map>
 #include "ConstantBuffer.h"
-
+#include "TextureManager.h"
 
 
 class Pipeline
@@ -43,32 +43,7 @@ public:
 	}
 
 	void init(std::string vsPath= "VertexShader.hlsl", std::string psPath = "PixelShader.hlsl");
-	/*void apply(Core* core)
-	{
-		for (int i = 0; i < vsConstantBuffers.size(); i++)
-		{
-			core->getCommandList()->SetGraphicsRootConstantBufferView(i, vsConstantBuffers[i].getGPUAddress());
-			vsConstantBuffers[i].next();
-		}
-		for (int i = 0; i < psConstantBuffers.size(); i++)
-		{
-			core->getCommandList()->SetGraphicsRootConstantBufferView(i, psConstantBuffers[i].getGPUAddress());
-			psConstantBuffers[i].next();
-		}
-	}*/
-	//void apply(Core* core)
-	//{
-	//	for (int i = 0; i < vsConstantBuffers.size(); i++)
-	//	{
-	//		core->getCommandList()->SetGraphicsRootConstantBufferView(i, vsConstantBuffers[i].getGPUAddress());
-	//		vsConstantBuffers[i].next();
-	//	}
-	//	for (int i = 0; i < psConstantBuffers.size(); i++)
-	//	{
-	//		core->getCommandList()->SetGraphicsRootConstantBufferView(i, psConstantBuffers[i].getGPUAddress());
-	//		psConstantBuffers[i].next();
-	//	}
-	//}
+	
 	void free()
 	{
 		pixelShader->Release();
@@ -124,19 +99,59 @@ public:
 
 		return true;
 	}
+
+	// update world matrix and view_projection matrix
+	static void updateBaseStaticBuffer(const std::string& pipeName, Pipelines* pipes, Matrix worldPosMat);
+	
+
+	// update instance matrix
+	static void updateInstanceBuffer(const std::string& pipeName, Pipelines* pipes, std::vector<Matrix>* const instanceMatrices);
+	
+
+	// update light info
+	static void updateLightBuffer(const std::string& pipeName, Pipelines* pipes);
+	
+
+
+
 	static void updateTexture(std::map<std::string, int>* const textureBindPoints, Core* core, std::string name, int heapOffset, int srvRootIndex = 3) 
 	{
 		UINT bindPoint = textureBindPoints->find(name)->second;
 		D3D12_GPU_DESCRIPTOR_HANDLE handle = core->srvHeap.gpuHandle;
-		handle.ptr = handle.ptr + (UINT64)(heapOffset - bindPoint) * (UINT64)core->srvHeap.incrementSize;
+		handle.ptr = handle.ptr + (UINT64)(heapOffset) * (UINT64)core->srvHeap.incrementSize;
 		core->getCommandList()->SetGraphicsRootDescriptorTable(srvRootIndex, handle);
 	}
 
-	static void submitToCommandList(Core* core, std::vector<ConstantBuffer>& constantBuffers)
+	static void updateTexture(std::map<std::string, int>* const textureBindPoints, Core* core, const std::map<std::string, int>& textureHeapOffsets, int srvRootIndex = 3)
+	{
+		for (const auto& pair : textureHeapOffsets)
+		{
+			std::string texName = pair.first; // "albedo_tex" / "normal_tex"
+			int heapOffset = pair.second;
+
+			auto it = textureBindPoints->find(texName);
+			if (it == textureBindPoints->end())
+			{
+				//OutputDebugStringA(("Texture bind point not found: " + texName).c_str());
+				continue;
+			}
+
+			UINT bindPoint = it->second;
+			D3D12_GPU_DESCRIPTOR_HANDLE handle = core->srvHeap.gpuHandle;
+			handle.ptr += (UINT64)(heapOffset) * core->srvHeap.incrementSize;
+
+			// 注意：这里的根参数索引是Pipeline中记录的srvTableRootIndex（原修改后的动态索引）
+			// 假设Pipeline的srvTableRootIndex是3，且SRV范围是t0-t7，直接设置描述符表即可
+			// 若需要单独设置每个SRV，需修改根签名为多个Descriptor Table，这里简化为批量绑定
+			core->getCommandList()->SetGraphicsRootDescriptorTable(srvRootIndex, handle);
+		}
+	}
+	static void submitToCommandList(Core* core, std::vector<ConstantBuffer>& constantBuffers, UINT rootIndexOffset = 0)
 	{
 		for (int i = 0; i < constantBuffers.size(); i++)
 		{
-			core->getCommandList()->SetGraphicsRootConstantBufferView(i, constantBuffers[i].getGPUAddress());
+			UINT rootIndex = rootIndexOffset + i;
+			core->getCommandList()->SetGraphicsRootConstantBufferView(rootIndex, constantBuffers[i].getGPUAddress());
 			constantBuffers[i].next();
 		}
 	}

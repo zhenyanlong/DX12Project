@@ -2,6 +2,7 @@
 #include "GEMLoader.h"
 #include "TextureManager.h"
 #include "World.h"
+#include "StringUtils.h"
 void Mesh::init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
 	unsigned int* indices, int numIndices)
 
@@ -228,14 +229,68 @@ void StaticMesh::CreateFromGEM(Core* core, std::string filename)
 		}
 		textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
 		texMgr->loadTexture(core, gemmeshes[i].material.find("albedo").getValue());
+		// normal texture (nh)
+		std::string normalPath = gemmeshes[i].material.find("nh").getValue();
+		normalTextureFilenames.push_back(normalPath);
+		texMgr->loadTexture(core, normalPath);
+
 		mesh.init(core, vertices, gemmeshes[i].indices);
 		meshes.push_back(mesh);
 	}
 }
 
-void StaticMesh::draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes)
+void StaticMesh::draw(Core* core, PSOManager* psos, std::string pipeName, Pipelines* pipes, std::vector<Matrix>* instanceMatrices, int instanceCount)
 {
+	GeneralMatrix* gm = GeneralMatrix::Get();
 	World* myWorld = World::Get();
+
+	// ===== 步骤1：根据关键词执行Buffer更新策略（核心逻辑）=====
+	// 策略组合：支持多个关键词同时生效
+	bool isInstance = hasKeyword(pipeName, "Instance", { "Inst" }); // 兼容"Inst"缩写
+	bool isLight = hasKeyword(pipeName, "Light");
+	bool isAnim = hasKeyword(pipeName, "Anim");
+	bool isStatic = hasKeyword(pipeName, "Static", { "StaticMesh" }); // 兼容"Static"缩写
+
+	// 1. 基础静态策略（StaticMesh）：仅当非实例化时执行
+	if (isStatic && !isInstance)
+	{
+		Pipelines::updateBaseStaticBuffer(pipeName, pipes, m_worldPosMat);
+	}
+
+	// 2. 实例化策略（Instance）
+	if (isInstance)
+	{
+		Pipelines::updateInstanceBuffer(pipeName, pipes, instanceMatrices);
+	}
+
+	// 3. 光照策略（Light）
+	if (isLight)
+	{
+		Pipelines::updateLightBuffer(pipeName, pipes);
+		// 提交PS常量缓冲区（光照）
+		Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].psConstantBuffers, 2);
+	}
+
+	// 4. 动画策略（Anim）：未来拓展
+	if (isAnim)
+	{
+		//Pipelines::updateAnimBuffer(pipeName, pipes);
+	}
+
+	// ===== 步骤2：提交VS常量缓冲区（公共）=====
+	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
+	if (isLight)
+	{
+		
+	}
+	
+	// ===== 步骤3：执行公共绘制逻辑 =====
+	drawCommon(core, psos, pipes, pipeName, instanceCount);
+}
+
+void StaticMesh::drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes)
+{
+	/*World* myWorld = World::Get();
 	GeneralMatrix* gm = GeneralMatrix::Get();
 	
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &m_worldPosMat);
@@ -249,42 +304,94 @@ void StaticMesh::draw(Core* core, PSOManager* const psos, std::string pipeName, 
 		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset, myWorld->GetCore()->srvTableRootIndex);
 		psos->bind(core, pipes->pipelines[pipeName].psoName);
 		meshes[i].draw(core);
-	}
+	}*/
+	// 调用整合后的draw方法：单个绘制，无实例矩阵
+	draw(core, psos, pipeName, pipes, nullptr, 1);
 }
 
 void StaticMesh::drawInstances(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, std::vector<Matrix>* const instanceMatrices, int instanceCount)
 {
 	
-	GeneralMatrix* gm = GeneralMatrix::Get();
+	/*	 GeneralMatrix* gm = GeneralMatrix::Get();
 
-	// 1. 更新常量缓冲区：视图投影矩阵（VP）
+
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
 		"staticMeshBuffer", "VP", &gm->viewProjMatrix);
 
-	// 2. 更新实例化常量缓冲区：实例矩阵数组
+
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
 		"instanceBuffer", "instanceMatrices", instanceMatrices->data());
 
-	// 3. 提交常量缓冲区到命令列表
+
 	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
 
-	// 4. 绑定纹理和PSO
+
 	TextureManager* texs = TextureManager::Get();
 	for (int i = 0; i < meshes.size(); i++)
 	{
 		core->beginRenderPass();
-		// 更新纹理绑定
+
 		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints,
 			core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
-		// 绑定实例化PSO
+
 		psos->bind(core, pipes->pipelines[pipeName].psoName);
-		// 5. 实例化绘制：DrawIndexedInstanced（索引数量，实例数量，起始索引，起始顶点，起始实例）
+
 		meshes[i].drawInstanced(core, instanceCount);
-	}
+	}*/
+	// 调用整合后的draw方法：实例化绘制
+	draw(core, psos, pipeName, pipes, instanceMatrices, instanceCount);
 }
 
 StaticMesh::StaticMesh()
 {
+}
+
+void StaticMesh::drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName, int instanceCount)
+{
+	TextureManager* texs = TextureManager::Get();
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		core->beginRenderPass();
+
+		// 纹理绑定（兼容原有逻辑，若有多个纹理可拓展）
+		//Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints,
+		//	core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset,
+		//	World::Get()->GetCore()->srvTableRootIndex); // 若有重载则传参，否则省略
+		//if (!normalTextureFilenames.empty())
+		//{
+		//	Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints,
+		//		core, "normalTex", texs->textures.find(normalTextureFilenames[i])->second->heapOffset,
+		//		World::Get()->GetCore()->srvTableRootIndex); // 若有重载则传参，否则省略
+		//}
+		
+		std::map<std::string, int> textureHeapOffsets;
+
+		if (!textureFilenames.empty())
+		{
+			textureHeapOffsets["tex"] = texs->textures[textureFilenames[i]]->heapOffset;
+		}
+		
+		// 法线贴图（t1）
+		if (!normalTextureFilenames.empty())
+		{
+			textureHeapOffsets["normalTex"] = texs->textures[normalTextureFilenames[i]]->heapOffset;
+		}
+		
+		
+		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, textureHeapOffsets, World::Get()->GetCore()->srvTableRootIndex);
+		// 绑定PSO
+		psos->bind(core, pipes->pipelines[pipeName].psoName);
+
+		// 绘制：单个/实例化
+		if (instanceCount > 1)
+		{
+			meshes[i].drawInstanced(core, instanceCount);
+		}
+		else
+		{
+			meshes[i].draw(core);
+		}
+	}
 }
 
 void StaticMesh::CreateFromSphere(Core* core, int rings, int segments, float radius, std::string skyPath)
@@ -361,6 +468,12 @@ void AnimatedModel::CreateFromGEM(Core* core, std::string filename)
 		}
 		textureFilenames.push_back(gemmeshes[i].material.find("albedo").getValue());
 		texMgr->loadTexture(core, gemmeshes[i].material.find("albedo").getValue());
+
+		// 新增：加载法线贴图
+		std::string normalPath = gemmeshes[i].material.find("nh").getValue();
+		normalTextureFilenames.push_back(normalPath);
+		texMgr->loadTexture(core, normalPath);
+
 		mesh->init(core, vertices, gemmeshes[i].indices);
 		meshes.push_back(mesh);
 	}

@@ -13,7 +13,7 @@ SkyBoxActor::SkyBoxActor()
 void SkyBoxActor::draw()
 {
 	World* myWorld = World::Get();
-	skybox->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+	skybox->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 }
 
 TreeActor::TreeActor(int count)
@@ -39,16 +39,16 @@ void TreeActor::generateInstanceMatrices(int count, float radius, float height)
 		float y = (float)rand() / RAND_MAX * height;
 
 		// 随机缩放（0.8~1.2倍）
-		float scale = 0.8f + (float)rand() / RAND_MAX * 0.4f;
+		float scale = 0.01f;
 
 		// 随机旋转（Y轴）
 		float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
 
 		// 构建实例的世界矩阵：缩放 -> 旋转 -> 平移
 		Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
-		Matrix rotMat = Matrix::rotateY(rotY);
+		Matrix rotMat = Matrix::rotateZ(0.f)*Matrix::rotateY(rotY)* Matrix::rotateX(0.f);
 		Matrix transMat = Matrix::translation(Vec3(x, y, z));
-		Matrix instanceMat = scaleMat * rotMat * transMat;
+		Matrix instanceMat = scaleMat* rotMat * transMat;
 
 		instanceMatrices.push_back(instanceMat);
 	}
@@ -59,5 +59,5 @@ void TreeActor::draw()
 	World* myWorld = World::Get();
 	
 	//willow->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
-	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
+	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
 }

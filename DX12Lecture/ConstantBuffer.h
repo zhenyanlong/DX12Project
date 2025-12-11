@@ -62,7 +62,7 @@ public:
 		D3DReflect(shader->GetBufferPointer(), shader->GetBufferSize(), IID_PPV_ARGS(&reflection));
 		D3D12_SHADER_DESC desc;
 		reflection->GetDesc(&desc);
-		unsigned int totalSize = 0;
+		//unsigned int totalSize = 0;
 		for (int i = 0; i < desc.ConstantBuffers; i++)
 		{
 			ConstantBuffer buffer;
@@ -81,11 +81,11 @@ public:
 				bufferVariable.offset = vDesc.StartOffset;
 				bufferVariable.size = vDesc.Size;
 				buffer.constantBufferData.insert({ vDesc.Name, bufferVariable });
-				totalSize += bufferVariable.size;
+				//totalSize += bufferVariable.size;
 
 			}
 		
-			buffer.init(core,totalSize);
+			buffer.init(core, cbDesc.Size);
 			buffers.push_back(buffer);
 		}
 		//std::map<std::string, int> textureBindPoints;

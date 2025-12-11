@@ -313,7 +313,8 @@ class StaticMesh : public WorldPosParam
 	
 public:
 	std::vector<Mesh> meshes;
-	std::vector<std::string> textureFilenames;
+	std::vector<std::string> textureFilenames;			// albedo Textures
+	std::vector<std::string> normalTextureFilenames;	// nh Textures	
 
 	StaticMesh();
 	StaticMesh(Core* core, std::string filename);
@@ -322,7 +323,12 @@ public:
 	void CreateFromGEM(Core* core, std::string filename);
 	void CreateFromSphere(Core* core, int rings, int segments, float radius, std::string skyPath);
 
-	void draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes);
+private:
+	void drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName, int instanceCount = 1);
+	
+public:
+	void draw(Core* core, PSOManager* psos, std::string pipeName, Pipelines* pipes, std::vector<Matrix>* instanceMatrices = nullptr, int instanceCount = 1);
+	void drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes);
 	void drawInstances(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, std::vector<Matrix>* const instanceMatrices, int count);
 };
 
@@ -332,7 +338,8 @@ class AnimatedModel : public WorldPosParam
 public:
 	std::vector<Mesh*> meshes;
 	Animation animation;
-	std::vector<std::string> textureFilenames;
+	std::vector<std::string> textureFilenames;			// albedo Textures
+	std::vector<std::string> normalTextureFilenames;	// nh Textures	
 
 	// init function (load)
 	AnimatedModel(Core* core, std::string filename);
