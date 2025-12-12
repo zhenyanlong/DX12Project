@@ -28,10 +28,11 @@ float3 LambertBRDF(float3 albedo, float NdotL)
 float4 PS(PS_INPUT input) : SV_Target0
 {
     float4 albedoTexel = tex.Sample(samplerLinear, input.TexCoords);
+    
     if (albedoTexel.a < 0.5)
         discard; // Alpha测试
-    //float3 linearAlbedo = pow(albedoTexel.rgb, 2.2); // SRGB → 线性空间
-    float3 linearAlbedo = albedoTexel.rgb;
+    float3 linearAlbedo = pow(albedoTexel.rgb, 1.0/2.2); // SRGB → 线性空间
+    //float3 linearAlbedo = albedoTexel.rgb;
     
     // 2. 采样法线贴图，转换为切线空间法线（[0,1] → [-1,1]）
     float3 tangentNormal = normalTex.Sample(samplerLinear, input.TexCoords).rgb;
@@ -55,7 +56,7 @@ float4 PS(PS_INPUT input) : SV_Target0
     //diffuse = (linearAlbedo / 3.1415926535) * max(NdotL, 0.0);
     
     // 7. 最终颜色计算（光源颜色×强度×漫反射 + 环境光(强度0.1)）
-    float3 finalColor = diffuse* lightColor * 5.f   + linearAlbedo * 0.1;
+    float3 finalColor = diffuse * lightColor * lightIntensity + linearAlbedo * 0.2;
 
     
     return float4(finalColor, 1.0);

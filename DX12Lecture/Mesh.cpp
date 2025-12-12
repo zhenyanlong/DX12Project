@@ -366,13 +366,13 @@ void StaticMesh::drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, cons
 		
 		std::map<std::string, int> textureHeapOffsets;
 
-		if (!textureFilenames.empty())
+		if (i<textureFilenames.size())
 		{
 			textureHeapOffsets["tex"] = texs->textures[textureFilenames[i]]->heapOffset;
 		}
 		
 		// ·¨ÏßÌùÍ¼£¨t1£©
-		if (!normalTextureFilenames.empty())
+		if (i<normalTextureFilenames.size())
 		{
 			textureHeapOffsets["normalTex"] = texs->textures[normalTextureFilenames[i]]->heapOffset;
 		}

@@ -5,7 +5,7 @@ SkyBoxActor::SkyBoxActor()
 {
 	World* myWorld = World::Get();
 	skybox = new StaticMesh();
-	skybox->CreateFromSphere(myWorld->GetCore(), 64, 64, 5, "Models/Textures/sky.png");
+	skybox->CreateFromSphere(myWorld->GetCore(), 64, 64, 5, "Models/Textures/sky_ps.png");
 	skybox->SetWorldScaling(Vec3(1000.f, 1000.f, 1000.f));
 	skybox->SetWorldRotationRadian(Vec3(M_PI, 0.f, 0.f));
 }

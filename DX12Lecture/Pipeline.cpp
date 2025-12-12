@@ -110,7 +110,7 @@ void Pipelines::updateLightBuffer(const std::string& pipeName, Pipelines* pipes)
 {
 
 	Vec3 lightDir = Vec3(1.0f, 1.0f, 1.0f).normalize();
-	float lightIntensity = 1.0f;
+	float lightIntensity = 3.0f;
 	Vec3 lightColor = Vec3(1.0f, 1.0f, 1.0f);
 	float roughness = 0.3f;
 
