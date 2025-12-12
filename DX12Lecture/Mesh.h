@@ -259,12 +259,12 @@ public:
 
 	static void CreateGEM(Core* core, std::vector<Mesh>& meshes, std::string filename);
 
-	static STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv)
+	static STATIC_VERTEX addVertex(Vec3 p, Vec3 n, float tu, float tv, Vec3 tang = Vec3(0, 0, 0))
 	{
 		STATIC_VERTEX v;
 		v.pos = p;
 		v.normal = n;
-		v.tangent = Vec3(0, 0, 0); // For now
+		v.tangent = tang; // For now
 		v.tu = tu;
 		v.tv = tv;
 		return v;
@@ -322,6 +322,7 @@ public:
 	//void draw(Core* core, PSOManager& psos, Mesh& prim)
 	void CreateFromGEM(Core* core, std::string filename);
 	void CreateFromSphere(Core* core, int rings, int segments, float radius, std::string skyPath);
+	void CreateFromPlane(Core* core, float size = 100.0f, int xSegments = 100, int zSegments = 100);
 
 private:
 	void drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName, int instanceCount = 1);

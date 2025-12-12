@@ -294,7 +294,7 @@ public:
 		parameters.push_back(rootParameterCBPS);
 		
 
-		// PS SRV : s0 Index 4
+		// PS SRV : s0 
 		D3D12_DESCRIPTOR_RANGE srvRange = {};
 		srvRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 		srvRange.NumDescriptors = 8; // number of SRVs (t0¨Ct7)
@@ -312,7 +312,7 @@ public:
 		// PS CBV : b3 Index 3
 		D3D12_ROOT_PARAMETER rootParameterCBVS_b3;
 		rootParameterCBVS_b3.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-		rootParameterCBVS_b3.Descriptor.ShaderRegister = 3; // Register(b3)
+		rootParameterCBVS_b3.Descriptor.ShaderRegister = 2; // Register(b2)
 		rootParameterCBVS_b3.Descriptor.RegisterSpace = 0;
 		rootParameterCBVS_b3.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		parameters.push_back(rootParameterCBVS_b3);

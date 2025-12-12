@@ -123,3 +123,60 @@ void Pipelines::updateLightBuffer(const std::string& pipeName, Pipelines* pipes)
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].psConstantBuffers,
 		"PSLightBuffer", "roughness", &roughness);
 }
+struct GerstnerWave
+{
+	float directionX; // 对应HLSL的float2（8字节）
+	float directionY;
+	float amplitude;              // 4字节（累计12）
+	float frequency;              // 4字节（累计16，刚好对齐）
+	float phase;                  // 4字节
+	float steepness;              // 4字节
+	// 补充填充：HLSL中结构体默认按16字节对齐，需添加2个float填充（共24→32字节，16的倍数）
+	float padding[2];
+};
+
+// 水面常量缓冲区（与HLSL的WaterBuffer对齐）
+struct alignas(16) WaterBuffer
+{
+	GerstnerWave waves[4]; // 4个波：4×32=128字节
+	float time;            // 4字节
+	float scale;           // 4字节
+	float padding[2];      // 填充8字节，总大小144字节（16的倍数）
+};
+void Pipelines::updateWaveBuffer(const std::string& pipeName, Pipelines* pipes)
+{
+	WaterBuffer waterData;
+	waterData.time = 0.0f;
+	waterData.scale = 0.1f; // 水面缩放系数（控制波的密度）
+
+	//// 波1：主波（大振幅，低频率）
+	//waterData.waves[0].direction = DirectX::XMFLOAT2(1.0f, 0.5f);
+	//waterData.waves[0].amplitude = 0.5f;
+	//waterData.waves[0].frequency = 0.5f;
+	//waterData.waves[0].phase = 0.0f;
+	//waterData.waves[0].steepness = 0.8f;
+
+	//// 波2：次波（小振幅，高频率）
+	//waterData.waves[1].direction = DirectX::XMFLOAT2(-0.3f, 1.0f);
+	//waterData.waves[1].amplitude = 0.2f;
+	//waterData.waves[1].frequency = 1.2f;
+	//waterData.waves[1].phase = 0.5f;
+	//waterData.waves[1].steepness = 0.5f;
+
+	//// 波3：扰动波
+	//waterData.waves[2].direction = DirectX::XMFLOAT2(0.8f, -0.2f);
+	//waterData.waves[2].amplitude = 0.1f;
+	//waterData.waves[2].frequency = 2.0f;
+	//waterData.waves[2].phase = 0.2f;
+	//waterData.waves[2].steepness = 0.3f;
+
+	//// 波4：扰动波
+	//waterData.waves[3].direction = DirectX::XMFLOAT2(-0.5f, -0.8f);
+	//waterData.waves[3].amplitude = 0.05f;
+	//waterData.waves[3].frequency = 3.0f;
+	//waterData.waves[3].phase = 0.7f;
+	//waterData.waves[3].steepness = 0.2f;
+
+	//// 实时更新时间（每帧增加）
+	//waterData.time += core->deltaTime; // deltaTime是每帧的时间间隔
+}

@@ -346,6 +346,58 @@ StaticMesh::StaticMesh()
 {
 }
 
+void StaticMesh::CreateFromPlane(Core* core, float size, int xSegments, int zSegments)
+{
+	std::vector<STATIC_VERTEX> vertices;
+	std::vector<unsigned int> indices;
+
+	// 生成顶点（平面：x从-size/2到size/2，z从-size/2到size/2，y=0）
+	for (int z = 0; z <= zSegments; z++)
+	{
+		for (int x = 0; x <= xSegments; x++)
+		{
+			float u = (float)x / xSegments;
+			float v = (float)z / zSegments;
+			float posX = (u - 0.5f) * size;
+			float posZ = (v - 0.5f) * size;
+			float posY = 0.0f;
+
+			//STATIC_VERTEX vert;
+			Vec3 Pos = Vec3(posX, posY, posZ);
+			Vec3 Normal = Vec3(0.0f, 1.0f, 0.0f); // 初始法线向上
+			Vec3 Tangent = Vec3(1.0f, 0.0f, 0.0f); // 初始切线向右
+			//TexCoords = DirectX::XMFLOAT2(u, v);
+			
+			vertices.push_back(Mesh::addVertex(Pos, Normal, u ,v, Tangent));
+		}
+	}
+
+	// 生成索引（三角面）
+	for (int z = 0; z < zSegments; z++)
+	{
+		for (int x = 0; x < xSegments; x++)
+		{
+			int i0 = z * (xSegments + 1) + x;
+			int i1 = z * (xSegments + 1) + x + 1;
+			int i2 = (z + 1) * (xSegments + 1) + x;
+			int i3 = (z + 1) * (xSegments + 1) + x + 1;
+
+			// 两个三角面
+			indices.push_back(i0);
+			indices.push_back(i2);
+			indices.push_back(i1);
+			indices.push_back(i1);
+			indices.push_back(i2);
+			indices.push_back(i3);
+		}
+	}
+
+	// 创建Mesh（复用原有meshes的初始化逻辑）
+	Mesh waterMesh;
+	waterMesh.init(core, vertices, indices);
+	meshes.push_back(waterMesh);
+}
+
 void StaticMesh::drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName, int instanceCount)
 {
 	TextureManager* texs = TextureManager::Get();

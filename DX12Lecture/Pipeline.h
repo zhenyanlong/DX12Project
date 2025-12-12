@@ -111,7 +111,8 @@ public:
 	// update light info
 	static void updateLightBuffer(const std::string& pipeName, Pipelines* pipes);
 	
-
+	// update water vertex info
+	static void updateWaveBuffer(const std::string& pipeName, Pipelines* pipes);
 
 
 	static void updateTexture(std::map<std::string, int>* const textureBindPoints, Core* core, std::string name, int heapOffset, int srvRootIndex = 3) 
