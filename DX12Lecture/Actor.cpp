@@ -61,3 +61,16 @@ void TreeActor::draw()
 	//willow->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
 }
+
+WaterActor::WaterActor()
+{
+	World* myWorld = World::Get();
+	water = new StaticMesh();
+	water->CreateFromPlane(myWorld->GetCore(),10000,1000,1000);
+}
+
+void WaterActor::draw()
+{
+	World* myWorld = World::Get();
+	water->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_LIGHT_WATER_PIPE, myWorld->GetPipelines());
+}

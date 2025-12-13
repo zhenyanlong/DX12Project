@@ -151,7 +151,8 @@ public:
 	{
 		for (int i = 0; i < constantBuffers.size(); i++)
 		{
-			UINT rootIndex = rootIndexOffset + i;
+			//UINT rootIndex = rootIndexOffset + i;
+			UINT rootIndex = ConstantBuffer::RegisterToRootIndex[constantBuffers[i].name];
 			core->getCommandList()->SetGraphicsRootConstantBufferView(rootIndex, constantBuffers[i].getGPUAddress());
 			constantBuffers[i].next();
 		}

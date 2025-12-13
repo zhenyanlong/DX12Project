@@ -25,3 +25,11 @@ void ConstantBuffer::init(Core* core, unsigned int sizeInBytes, unsigned int _ma
 	//constantBuffer->Map(0, NULL, (void**)&buffer);
 
 }
+// ===== 初始化全局映射表：HLSL寄存器编号 → 根签名索引（核心配置）=====
+// 例如：b0→0, b1→1, b2→2, b3→3（与根签名的配置一致）
+std::map<std::string, UINT> ConstantBuffer::RegisterToRootIndex = {
+	{"staticMeshBuffer", 0},  // staticMeshBuffer (b0) → 根索引0
+	{"instanceBuffer", 1},  // instanceBuffer (b1) → 根索引1
+	{"PSLightBuffer", 2},  // PSLightBuffer (b2) → 根索引2
+	{"WaterBuffer", 4}   // WaterBuffer (b3) → 根索引3
+};

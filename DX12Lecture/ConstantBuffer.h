@@ -30,6 +30,8 @@ public:
 	std::string name;
 	std::map<std::string, ConstantBufferVariable> constantBufferData;
 
+	
+
 public:
 	void init(Core* core, unsigned int sizeInBytes, unsigned int _maxDrawCalls = 1024);
 
@@ -55,6 +57,8 @@ public:
 		}
 	}
 
+	static std::map<std::string, UINT> RegisterToRootIndex; // È«¾ÖÓ³Éä±í£ºregister(bX) ¡ú root index
+
 	static std::vector<ConstantBuffer> reflect(Core* core, ID3DBlob* shader, std::map<std::string, int>* const textureBindPoints = nullptr)
 	{
 		std::vector<ConstantBuffer> buffers;
@@ -67,9 +71,12 @@ public:
 		{
 			ConstantBuffer buffer;
 			ID3D12ShaderReflectionConstantBuffer* constantBuffer = reflection->GetConstantBufferByIndex(i);
+			if (!constantBuffer) continue;
+			
 			D3D12_SHADER_BUFFER_DESC cbDesc;
 			constantBuffer->GetDesc(&cbDesc);
 			buffer.name = cbDesc.Name;
+			
 			
 
 			for (int j = 0; j < cbDesc.Variables; j++)

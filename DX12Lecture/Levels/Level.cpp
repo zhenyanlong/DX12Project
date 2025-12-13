@@ -12,6 +12,9 @@ TestMap::TestMap()
 	
 	Actor* tree = new TreeActor();
 	m_actors["Tree"] = tree;
+
+	Actor* water = new WaterActor();
+	m_actors["Water"] = water;
 }
 
 void TestMap::draw()

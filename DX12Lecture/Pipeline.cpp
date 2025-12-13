@@ -1,6 +1,8 @@
 #include "Pipeline.h"
 #include "VertexLayoutCache.h"
 #include "Mesh.h"
+#include "World.h"
+
 void Pipeline::init(std::string vsPath, std::string psPath)
 {
 	vertexShaderStr = loadstr(vsPath);
@@ -109,7 +111,7 @@ void Pipelines::updateInstanceBuffer(const std::string& pipeName, Pipelines* pip
 void Pipelines::updateLightBuffer(const std::string& pipeName, Pipelines* pipes)
 {
 
-	Vec3 lightDir = Vec3(1.0f, 1.0f, 1.0f).normalize();
+	Vec3 lightDir = Vec3(0.f, 1.0f, 0.f).normalize();
 	float lightIntensity = 3.0f;
 	Vec3 lightColor = Vec3(1.0f, 1.0f, 1.0f);
 	float roughness = 0.3f;
@@ -147,36 +149,48 @@ void Pipelines::updateWaveBuffer(const std::string& pipeName, Pipelines* pipes)
 {
 	WaterBuffer waterData;
 	waterData.time = 0.0f;
-	waterData.scale = 0.1f; // 水面缩放系数（控制波的密度）
+	waterData.scale = 0.001f; // 水面缩放系数（控制波的密度）
 
-	//// 波1：主波（大振幅，低频率）
-	//waterData.waves[0].direction = DirectX::XMFLOAT2(1.0f, 0.5f);
-	//waterData.waves[0].amplitude = 0.5f;
-	//waterData.waves[0].frequency = 0.5f;
-	//waterData.waves[0].phase = 0.0f;
-	//waterData.waves[0].steepness = 0.8f;
+	// 波1：主波（大振幅，低频率）
+	waterData.waves[0].directionX = 1.0f;
+	waterData.waves[0].directionY = 0.5f;
+	waterData.waves[0].amplitude = 0.5f* 200;
+	waterData.waves[0].frequency = 0.5f ;
+	waterData.waves[0].phase = 0.0f;
+	waterData.waves[0].steepness = 0.8f ;
 
-	//// 波2：次波（小振幅，高频率）
-	//waterData.waves[1].direction = DirectX::XMFLOAT2(-0.3f, 1.0f);
-	//waterData.waves[1].amplitude = 0.2f;
-	//waterData.waves[1].frequency = 1.2f;
-	//waterData.waves[1].phase = 0.5f;
-	//waterData.waves[1].steepness = 0.5f;
+	// 波2：次波（小振幅，高频率）
+	waterData.waves[1].directionX = -0.3f;
+	waterData.waves[1].directionY = 1.0f;
+	waterData.waves[1].amplitude = 0.2f * 200;
+	waterData.waves[1].frequency = 1.2f ;
+	waterData.waves[1].phase = 0.5f ;
+	waterData.waves[1].steepness = 0.5f ;
 
-	//// 波3：扰动波
-	//waterData.waves[2].direction = DirectX::XMFLOAT2(0.8f, -0.2f);
-	//waterData.waves[2].amplitude = 0.1f;
-	//waterData.waves[2].frequency = 2.0f;
-	//waterData.waves[2].phase = 0.2f;
-	//waterData.waves[2].steepness = 0.3f;
+	// 波3：扰动波
+	waterData.waves[2].directionX = 0.8f;
+	waterData.waves[2].directionY = -0.2f;
+	waterData.waves[2].amplitude = 0.1f * 200;
+	waterData.waves[2].frequency = 2.0f ;
+	waterData.waves[2].phase = 0.2f ;
+	waterData.waves[2].steepness = 0.3f ;
 
-	//// 波4：扰动波
-	//waterData.waves[3].direction = DirectX::XMFLOAT2(-0.5f, -0.8f);
-	//waterData.waves[3].amplitude = 0.05f;
-	//waterData.waves[3].frequency = 3.0f;
-	//waterData.waves[3].phase = 0.7f;
-	//waterData.waves[3].steepness = 0.2f;
+	// 波4：扰动波
+	waterData.waves[3].directionX = -0.5f;
+	waterData.waves[3].directionY = -0.8f;
+	waterData.waves[3].amplitude = 0.05f * 200;
+	waterData.waves[3].frequency = 2.0f;
+	waterData.waves[3].phase = 0.7f;
+	waterData.waves[3].steepness = 0.2f;
 
-	//// 实时更新时间（每帧增加）
-	//waterData.time += core->deltaTime; // deltaTime是每帧的时间间隔
+	// 实时更新时间（每帧增加）	
+	World* myMorld = World::Get();
+	waterData.time += myMorld->GetCultime(); // deltaTime是每帧的时间间隔
+
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "waves", waterData.waves);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "time", &waterData.time);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "scale", &waterData.scale);
 }

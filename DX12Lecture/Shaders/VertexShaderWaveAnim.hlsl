@@ -1,26 +1,28 @@
 struct GerstnerWave
 {
-    float2 direction; // 波的传播方向（归一化）
+    float directionX; // 波的传播方向（归一化）
+    float directionY;
     float amplitude; // 振幅（波高）
     float frequency; // 频率（2π/波长）
     float phase; // 相位（随时间变化，控制波的移动）
     float steepness; // 陡度（控制波的卷曲程度，0~1）
+    float padding[2];
 };
 
 // ===== 新增：水面常量缓冲区（register(b3)，需对应根签名的新索引）=====
-cbuffer WaterBuffer : register(b3)
-{
-    GerstnerWave waves[4]; // 4个波叠加，效果更自然
-    float time; // 时间（用于更新相位）
-    float scale; // 水面缩放系数
-};
+
 
 cbuffer staticMeshBuffer : register(b0)
 {
     float4x4 W;
     float4x4 VP;
 };
-
+cbuffer WaterBuffer : register(b3)
+{
+    GerstnerWave waves[4]; // 4个波叠加，效果更自然
+    float time; // 时间（用于更新相位）
+    float scale; // 水面缩放系数
+};
 void ComputeGerstnerWaves(float3 inputPos, out float3 outputPos, out float3 outputNormal)
 {
     // 初始位置：水面平面的x-z坐标（y=0），缩放系数调整范围
@@ -36,7 +38,7 @@ void ComputeGerstnerWaves(float3 inputPos, out float3 outputPos, out float3 outp
             continue; // 跳过无效波
 
         // 归一化波的方向
-        float2 dir = normalize(wave.direction);
+        float2 dir = normalize(float2(wave.directionX, wave.directionY));
         // 波的相位：2π*频率*（方向·位置） + 相位 + 时间*频率（随时间移动）
         float theta = 2.0 * 3.1415926535 * (dot(dir, pos) * wave.frequency + wave.phase + time * wave.frequency);
         // 计算余弦和正弦值
@@ -114,10 +116,11 @@ PS_INPUT VS(VS_INPUT input)
     // ===== 核心：Gerstner波顶点动画 =====
     float3 localPos = input.Pos.xyz; // 本地平面顶点位置
     float3 localNormal;
-    ComputeGerstnerWaves(localPos, localPos, localNormal); // 扰动位置和法线
+    float3 outLocalPos;
+    ComputeGerstnerWaves(localPos, outLocalPos, localNormal); // 扰动位置和法线
 
     // 本地→世界空间
-    float4 worldPos = mul(float4(localPos, 1.0), worldMatrix);
+    float4 worldPos = mul(float4(outLocalPos, 1.0), worldMatrix);
     output.Pos = mul(worldPos, VP); // 世界→裁剪空间
     output.WorldPos = worldPos.xyz;
 

@@ -31,3 +31,11 @@ public:
 	virtual void draw() override;
 };
 
+class WaterActor : public Actor
+{
+	StaticMesh* water;
+
+public:
+	WaterActor();
+	virtual void draw() override;
+};

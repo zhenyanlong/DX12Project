@@ -28,7 +28,7 @@ float4 PS(PS_INPUT input) : SV_Target0
 {
     // 原有光照逻辑 + 水面菲涅尔效果（可选）
     //float4 albedoTexel = tex.Sample(samplerLinear, input.TexCoords);
-    float3 albedoTexel = float3(0.f, 0.f, 1.f);
+    float3 albedoTexel = float3(0.f, 0.8f, 0.8f);
     //if (albedoTexel.a < 0.5)
     //    discard;
     float3 linearAlbedo = albedoTexel.rgb;
@@ -42,10 +42,10 @@ float4 PS(PS_INPUT input) : SV_Target0
     float3 L = normalize(lightDir);
     float NdotL = max(dot(input.WorldNormal, L), 0.0);
     float3 diffuse = LambertBRDF(linearAlbedo, NdotL);
-    float3 finalColor = diffuse * lightColor * lightIntensity + linearAlbedo * 0.1;
+    float3 finalColor = diffuse * lightColor * lightIntensity + linearAlbedo * 0.3;
 
     // 叠加菲涅尔效果（水面更亮）
-    finalColor = lerp(finalColor, float3(1.0, 1.0, 1.0), fresnel);
+    //finalColor = lerp(finalColor, float3(1.0, 1.0, 1.0), fresnel);
 
     return float4(finalColor, 1.0);
 }

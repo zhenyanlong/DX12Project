@@ -250,6 +250,7 @@ void StaticMesh::draw(Core* core, PSOManager* psos, std::string pipeName, Pipeli
 	bool isLight = hasKeyword(pipeName, "Light");
 	bool isAnim = hasKeyword(pipeName, "Anim");
 	bool isStatic = hasKeyword(pipeName, "Static", { "StaticMesh" }); // 兼容"Static"缩写
+	bool isWater = hasKeyword(pipeName, "Water", { "Wat" });
 
 	// 1. 基础静态策略（StaticMesh）：仅当非实例化时执行
 	if (isStatic && !isInstance)
@@ -268,7 +269,7 @@ void StaticMesh::draw(Core* core, PSOManager* psos, std::string pipeName, Pipeli
 	{
 		Pipelines::updateLightBuffer(pipeName, pipes);
 		// 提交PS常量缓冲区（光照）
-		Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].psConstantBuffers, 2);
+		
 	}
 
 	// 4. 动画策略（Anim）：未来拓展
@@ -277,12 +278,16 @@ void StaticMesh::draw(Core* core, PSOManager* psos, std::string pipeName, Pipeli
 		//Pipelines::updateAnimBuffer(pipeName, pipes);
 	}
 
+	if (isWater)
+	{
+		Pipelines::updateWaveBuffer(pipeName, pipes);
+	}
+
+
 	// ===== 步骤2：提交VS常量缓冲区（公共）=====
 	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
-	if (isLight)
-	{
-		
-	}
+	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].psConstantBuffers);
+	
 	
 	// ===== 步骤3：执行公共绘制逻辑 =====
 	drawCommon(core, psos, pipes, pipeName, instanceCount);
