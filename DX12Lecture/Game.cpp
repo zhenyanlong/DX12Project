@@ -234,7 +234,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		//SkySphere.draw(&core, myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 		
 
-		animMesh.draw(&core, myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), &animatedInstance, myWorld->GetDeltatime());
+		//animMesh.drawSingle(&core, myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), &animatedInstance, myWorld->GetDeltatime());
 		
 		
 		core.finishFrame();

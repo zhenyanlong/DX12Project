@@ -111,7 +111,7 @@ void Pipelines::updateInstanceBuffer(const std::string& pipeName, Pipelines* pip
 void Pipelines::updateLightBuffer(const std::string& pipeName, Pipelines* pipes)
 {
 
-	Vec3 lightDir = Vec3(0.f, 1.0f, 0.f).normalize();
+	Vec3 lightDir = Vec3(0.5f, 1.0f, 0.5f).normalize();
 	float lightIntensity = 3.0f;
 	Vec3 lightColor = Vec3(1.0f, 1.0f, 1.0f);
 	float roughness = 0.3f;
@@ -127,70 +127,81 @@ void Pipelines::updateLightBuffer(const std::string& pipeName, Pipelines* pipes)
 }
 struct GerstnerWave
 {
-	float directionX; // 对应HLSL的float2（8字节）
+	float directionX;
 	float directionY;
-	float amplitude;              // 4字节（累计12）
-	float frequency;              // 4字节（累计16，刚好对齐）
-	float phase;                  // 4字节
-	float steepness;              // 4字节
-	// 补充填充：HLSL中结构体默认按16字节对齐，需添加2个float填充（共24→32字节，16的倍数）
-	float padding[2];
+	float amplitude;
+	float wavelength;  // 替换原frequency，存储波长
+	float phaseOffset; // 相位偏移（HLSL中改为动态计算，这里预留可省略，或保留）
+	float steepness;
+	float padding[2];  // 保证32字节对齐（与HLSL一致）
 };
 
-// 水面常量缓冲区（与HLSL的WaterBuffer对齐）
+// 水面常量缓冲区（与HLSL严格对齐）
 struct alignas(16) WaterBuffer
 {
-	GerstnerWave waves[4]; // 4个波：4×32=128字节
-	float time;            // 4字节
-	float scale;           // 4字节
-	float padding[2];      // 填充8字节，总大小144字节（16的倍数）
+	GerstnerWave waves[16]; // 对应HLSL的16个波
+	int waveCount;          // 4字节
+	float wavelengthMin;    // 4字节
+	float wavelengthMax;    // 4字节
+	float steepnessMin;     // 4字节
+	float steepnessMax;     // 4字节
+	float baseDirection[2];   // 8字节
+
+	float randomDirection;  // 4字节
+	float time;             // 4字节
+	float scale;            // 4字节
+	float waveHeightGain;	// 4字节
+	int seed;               // 4字节
+	float padding[2];       // 填充8字节，保证总大小为16的倍数
 };
 void Pipelines::updateWaveBuffer(const std::string& pipeName, Pipelines* pipes)
 {
-	WaterBuffer waterData;
-	waterData.time = 0.0f;
-	waterData.scale = 0.001f; // 水面缩放系数（控制波的密度）
+	World* myWorld = World::Get();
+	// 静态变量：累计总时间、随机种子（只初始化一次）
+	static float totalTime = 0.0f;
+	static int seed = 12345; // 随机数种子（可自定义）
+	
+	float deltaTime = myWorld->GetDeltatime(); // 每帧时间增量（需在World中实现）
+	totalTime += deltaTime;
 
-	// 波1：主波（大振幅，低频率）
-	waterData.waves[0].directionX = 1.0f;
-	waterData.waves[0].directionY = 0.5f;
-	waterData.waves[0].amplitude = 0.5f* 200;
-	waterData.waves[0].frequency = 0.5f ;
-	waterData.waves[0].phase = 0.0f;
-	waterData.waves[0].steepness = 0.8f ;
+	WaterBuffer waterData = {}; // 初始化所有成员为0
 
-	// 波2：次波（小振幅，高频率）
-	waterData.waves[1].directionX = -0.3f;
-	waterData.waves[1].directionY = 1.0f;
-	waterData.waves[1].amplitude = 0.2f * 200;
-	waterData.waves[1].frequency = 1.2f ;
-	waterData.waves[1].phase = 0.5f ;
-	waterData.waves[1].steepness = 0.5f ;
+	// ===== 核心：配置自动波参数（可根据需求调整）=====
+	waterData.waveCount = 16;          // 使用8个波叠加（效果更自然，可调整）
+	waterData.wavelengthMin = 2.0f;   // 最小波长
+	waterData.wavelengthMax = 10.0f;  // 最大波长
+	waterData.steepnessMin = 0.1f;    // 最小陡度
+	waterData.steepnessMax = 5.0f;    // 最大陡度
+	waterData.baseDirection[0] = 1.0f; // 基础方向（如沿x+z方向）
+	waterData.baseDirection[1] = 0.5f;
+	waterData.randomDirection = 0.8f; // 方向随机度（0=完全沿基础方向，1=完全随机）
+	waterData.time = totalTime;       // 累计时间
+	waterData.scale = 0.001f;           // 水面缩放系数
+	waterData.waveHeightGain = 5.f;		// wave height scale
+	waterData.seed = seed;            // 随机数种子
 
-	// 波3：扰动波
-	waterData.waves[2].directionX = 0.8f;
-	waterData.waves[2].directionY = -0.2f;
-	waterData.waves[2].amplitude = 0.1f * 200;
-	waterData.waves[2].frequency = 2.0f ;
-	waterData.waves[2].phase = 0.2f ;
-	waterData.waves[2].steepness = 0.3f ;
-
-	// 波4：扰动波
-	waterData.waves[3].directionX = -0.5f;
-	waterData.waves[3].directionY = -0.8f;
-	waterData.waves[3].amplitude = 0.05f * 200;
-	waterData.waves[3].frequency = 2.0f;
-	waterData.waves[3].phase = 0.7f;
-	waterData.waves[3].steepness = 0.2f;
-
-	// 实时更新时间（每帧增加）	
-	World* myMorld = World::Get();
-	waterData.time += myMorld->GetCultime(); // deltaTime是每帧的时间间隔
-
+	// ===== 更新常量缓冲区（只需更新配置参数，HLSL端自动计算每个波的参数）=====
+	// 注意：waves数组在HLSL中是预留空间，C++端无需赋值，可传空或默认值
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
-		"WaterBuffer", "waves", waterData.waves);
+		"WaterBuffer", "waveCount", &waterData.waveCount);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "wavelengthMin", &waterData.wavelengthMin);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "wavelengthMax", &waterData.wavelengthMax);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "steepnessMin", &waterData.steepnessMin);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "steepnessMax", &waterData.steepnessMax);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "baseDirection", &waterData.baseDirection);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "randomDirection", &waterData.randomDirection);
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
 		"WaterBuffer", "time", &waterData.time);
 	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
 		"WaterBuffer", "scale", &waterData.scale);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "waveHeightGain", &waterData.waveHeightGain);
+	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+		"WaterBuffer", "seed", &waterData.seed);
 }

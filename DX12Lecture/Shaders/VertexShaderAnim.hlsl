@@ -1,10 +1,13 @@
-cbuffer staticMeshBuffer
+cbuffer staticMeshBuffer : register(b0)
 {
     float4x4 W;
     float4x4 VP;
+    
+};
+cbuffer AnimMeshBuffer : register(b4)
+{
     float4x4 bones[256];
 };
-
 struct VS_INPUT
 {
     float4 Pos : POSITION;

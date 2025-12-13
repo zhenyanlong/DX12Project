@@ -15,6 +15,9 @@ TestMap::TestMap()
 
 	Actor* water = new WaterActor();
 	m_actors["Water"] = water;
+
+	Actor* fpsActor = new FPSActor();
+	m_actors["FPSActor"] = fpsActor;
 }
 
 void TestMap::draw()

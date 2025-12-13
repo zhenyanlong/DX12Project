@@ -309,7 +309,7 @@ public:
 		parameters.push_back(rootParameterTex);
 		srvTableRootIndex = parameters.size() - 1;
 
-		// PS CBV : b3 Index 3
+		// VS CBV : b3 Index 4
 		D3D12_ROOT_PARAMETER rootParameterCBVS_b3;
 		rootParameterCBVS_b3.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 		rootParameterCBVS_b3.Descriptor.ShaderRegister = 3; // Register(b3)
@@ -317,6 +317,13 @@ public:
 		rootParameterCBVS_b3.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
 		parameters.push_back(rootParameterCBVS_b3);
 
+		// VS CBV : b4 Index 5
+		D3D12_ROOT_PARAMETER rootParameterCBVS_b4;
+		rootParameterCBVS_b4.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+		rootParameterCBVS_b4.Descriptor.ShaderRegister = 4; // Register(b4)
+		rootParameterCBVS_b4.Descriptor.RegisterSpace = 0;
+		rootParameterCBVS_b4.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+		parameters.push_back(rootParameterCBVS_b4);
 		// sampler
 		D3D12_STATIC_SAMPLER_DESC staticSampler = {};
 		staticSampler.Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;

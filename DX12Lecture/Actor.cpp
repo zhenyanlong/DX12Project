@@ -74,3 +74,18 @@ void WaterActor::draw()
 	World* myWorld = World::Get();
 	water->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_LIGHT_WATER_PIPE, myWorld->GetPipelines());
 }
+
+FPSActor::FPSActor()
+{
+	World* myWorld = World::Get();
+	fps_Mesh = new AnimatedModel(myWorld->GetCore(), "Models/Uzi.gem");
+	fps_Mesh->SetWorldScaling(Vec3(1.f, 1.f, 1.f));
+	animatedInstance = new AnimationInstance();
+	animatedInstance->init(&fps_Mesh->animation, 0);
+}
+
+void FPSActor::draw()
+{
+	World* myWorld = World::Get();
+	fps_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime());
+}

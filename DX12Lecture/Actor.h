@@ -1,8 +1,8 @@
 #pragma once
 #include "Mesh.h"
+#include "GeneralEvent.h"
 
-
-class Actor
+class Actor	: public GeneralEvent
 {
 	// collision system
 
@@ -37,5 +37,15 @@ class WaterActor : public Actor
 
 public:
 	WaterActor();
+	virtual void draw() override;
+};
+
+class FPSActor : public Actor
+{
+	AnimatedModel* fps_Mesh;	
+	AnimationInstance* animatedInstance;
+	
+public:
+	FPSActor();
 	virtual void draw() override;
 };

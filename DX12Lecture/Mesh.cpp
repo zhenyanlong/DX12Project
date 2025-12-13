@@ -569,35 +569,169 @@ void AnimatedModel::CreateFromGEM(Core* core, std::string filename)
 		animation.animations.insert({ name, aseq });
 	}
 }
-
-void AnimatedModel::draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt)
+void AnimatedModel::draw(Core* core, PSOManager* psos, std::string pipeName, Pipelines* pipes,
+	AnimationInstance* instance, const std::string& animName, float dt, int instanceCount)
 {
-	instance->update("walk", dt);
-	std::vector<std::string> names;
-	names = instance->animation->getAllAnimationNames();
-	if (instance->animationFinished() == true)
+	// ===== 步骤1：动画实例的前置更新（核心：处理动画播放、骨骼矩阵计算）=====
+	if (instance != nullptr)
 	{
-		instance->resetAnimationTime();
-	}
-	{
-		GeneralMatrix* gm = GeneralMatrix::Get();
-		
-		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &m_worldPosMat);
-		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
-		if (instance != nullptr)
+		// 检查动画是否存在，不存在则取第一个动画
+		std::string targetAnimName = animName;
+		if (!instance->animation->hasAnimation(targetAnimName))
 		{
-			Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "bones", instance->matrices);
+			auto animNames = instance->animation->getAllAnimationNames();
+			if (!animNames.empty())
+			{
+				targetAnimName = animNames[0];
+			}
+			else
+			{
+				// 无动画时直接返回
+				return;
+			}
 		}
 
-		Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
-		//shaders->apply(core, "AnimatedUntextured");
-		TextureManager* texs = TextureManager::Get();
-		for (int i = 0; i < meshes.size(); i++)
+		// 更新动画实例（推进时间、计算骨骼矩阵）
+		instance->update(targetAnimName, dt);
+
+		// 动画结束后重置时间（循环播放）
+		if (instance->animationFinished())
 		{
-			core->beginRenderPass();
-			Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
-			psos->bind(core, pipes->pipelines[pipeName].psoName);
-			meshes[i]->draw(core);
+			instance->resetAnimationTime();
 		}
 	}
+
+	// ===== 步骤2：关键词策略处理（参考StaticMesh，拓展动画逻辑）=====
+	GeneralMatrix* gm = GeneralMatrix::Get();
+	bool isStatic = hasKeyword(pipeName, "Static", { "StaticMesh" });    // 静态矩阵（W/VP）
+	bool isAnim = hasKeyword(pipeName, "Animation", { "Anim" });          // 动画（骨骼矩阵）
+	bool isLight = hasKeyword(pipeName, "Light");                        // 光照
+	bool isInstance = hasKeyword(pipeName, "Instance", { "Inst" });      // 实例化（预留）
+	bool isWater = hasKeyword(pipeName, "Water", { "Wat" });              // 水波纹（兼容）
+
+	// 1. 静态缓冲区更新：W（世界矩阵）、VP（视图投影矩阵）
+	if (isStatic && !isInstance)
+	{
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+			"staticMeshBuffer", "W", &m_worldPosMat);
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+			"staticMeshBuffer", "VP", &gm->viewProjMatrix);
+	}
+
+	// 2. 动画缓冲区更新：骨骼矩阵（核心）
+	if (isAnim && instance != nullptr)
+	{
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+			"staticMeshBuffer", "W", &m_worldPosMat);
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+			"staticMeshBuffer", "VP", &gm->viewProjMatrix);
+		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers,
+			"AnimMeshBuffer", "bones", instance->matrices);
+	}
+
+	// 3. 光照缓冲区更新（参考StaticMesh）
+	if (isLight)
+	{
+		Pipelines::updateLightBuffer(pipeName, pipes);
+	}
+
+	// 4. 水波纹缓冲区更新（兼容，动画模型一般不用）
+	if (isWater)
+	{
+		Pipelines::updateWaveBuffer(pipeName, pipes);
+	}
+
+	// 5. 实例化缓冲区更新（预留：后续实现动画模型的实例化）
+	if (isInstance)
+	{
+		// Pipelines::updateInstanceBuffer(pipeName, pipes, instanceMatrices);
+	}
+
+	// ===== 步骤3：提交常量缓冲区到命令列表 =====
+	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
+	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].psConstantBuffers);
+
+	// ===== 步骤4：执行公共绘制逻辑 =====
+	drawCommon(core, psos, pipes, pipeName, instance, instanceCount);
+}
+
+// ===== AnimatedModel的drawCommon公共绘制逻辑实现 =====
+void AnimatedModel::drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName,
+	AnimationInstance* instance, int instanceCount)
+{
+	TextureManager* texs = TextureManager::Get();
+	World* myWorld = World::Get();
+
+	for (int i = 0; i < meshes.size(); i++)
+	{
+		core->beginRenderPass();
+
+		// ===== 纹理绑定（支持albedo和法线贴图，与StaticMesh一致）=====
+		std::map<std::string, int> textureHeapOffsets;
+
+		// Albedo纹理（tex）
+		if (i < textureFilenames.size() && !textureFilenames[i].empty())
+		{
+			textureHeapOffsets["tex"] = texs->textures[textureFilenames[i]]->heapOffset;
+		}
+
+		// 法线贴图（normalTex）
+		if (i < normalTextureFilenames.size() && !normalTextureFilenames[i].empty())
+		{
+			textureHeapOffsets["normalTex"] = texs->textures[normalTextureFilenames[i]]->heapOffset;
+		}
+
+		// 批量更新纹理绑定
+		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core,
+			textureHeapOffsets, myWorld->GetCore()->srvTableRootIndex);
+
+		// ===== 绑定PSO =====
+		psos->bind(core, pipes->pipelines[pipeName].psoName);
+
+		// ===== 绘制：单个/实例化（动画模型暂默认单个，可拓展）=====
+		if (meshes[i] != nullptr)
+		{
+			if (instanceCount > 1)
+			{
+				meshes[i]->drawInstanced(core, instanceCount);
+			}
+			else
+			{
+				meshes[i]->draw(core);
+			}
+		}
+	}
+}
+void AnimatedModel::drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt)
+{
+	//instance->update("walk", dt);
+	//std::vector<std::string> names;
+	//names = instance->animation->getAllAnimationNames();
+	//if (instance->animationFinished() == true)
+	//{
+	//	instance->resetAnimationTime();
+	//}
+	//{
+	//	GeneralMatrix* gm = GeneralMatrix::Get();
+	//	
+	//	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "W", &m_worldPosMat);
+	//	Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "staticMeshBuffer", "VP", &gm->viewProjMatrix);
+	//	if (instance != nullptr)
+	//	{
+	//		Pipelines::updateConstantBuffer(pipes->pipelines[pipeName].vsConstantBuffers, "AnimMeshBuffer", "bones", instance->matrices);
+	//	}
+
+	//	Pipelines::submitToCommandList(core, pipes->pipelines[pipeName].vsConstantBuffers);
+	//	//shaders->apply(core, "AnimatedUntextured");
+	//	TextureManager* texs = TextureManager::Get();
+	//	for (int i = 0; i < meshes.size(); i++)
+	//	{
+	//		core->beginRenderPass();
+	//		Pipelines::updateTexture(&pipes->pipelines[pipeName].textureBindPoints, core, "tex", texs->textures.find(textureFilenames[i])->second->heapOffset);
+	//		psos->bind(core, pipes->pipelines[pipeName].psoName);
+	//		meshes[i]->draw(core);
+	//	}
+	//}
+
+	draw(core, psos, pipeName, pipes, instance, "17 reload", dt, 1);
 }

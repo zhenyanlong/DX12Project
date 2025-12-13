@@ -345,9 +345,16 @@ public:
 	// init function (load)
 	AnimatedModel(Core* core, std::string filename);
 	void CreateFromGEM(Core* core, std::string filename);
+private:
+	// ===== 新增：公共绘制逻辑（参考StaticMesh的drawCommon）=====
+	void drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName,
+		AnimationInstance* instance, int instanceCount = 1);
 
-	
-	void draw(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt);
+public:
+	void draw(Core* core, PSOManager* psos, std::string pipeName, Pipelines* pipes,
+		AnimationInstance* instance, const std::string& animName, float dt, int instanceCount = 1);
+
+	void drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt);
 	
 };
 
