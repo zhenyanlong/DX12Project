@@ -89,3 +89,24 @@ void FPSActor::draw()
 	World* myWorld = World::Get();
 	fps_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime());
 }
+
+void FPSActor::updatePos(Vec3 pos)
+{
+	fps_Mesh->SetWorldPos(pos);
+}
+
+void FPSActor::updateRotation(Vec3 rot)
+{
+	fps_Mesh->SetWorldRotationRadian(rot);
+}
+
+void FPSActor::updateRotation(Matrix rotMat)
+{
+	fps_Mesh->SetRotationMatrix(rotMat);
+}
+
+void FPSActor::updateWorldMatrix(Vec3 pos, float yaw, float pitch)
+{
+	/*Matrix rotation = Matrix::rotateY(m_yaw) * Matrix::rotateX(m_pitch);
+	return Matrix::translation(m_position) * rotation;*/
+}

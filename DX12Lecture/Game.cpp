@@ -75,6 +75,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	// load new level with shared ptr
 	myWorld->LoadNewLevel(std::make_shared<TestMap>());
 
+	Actor* mainActor = myWorld->GetLevel()->GetActor("FPSActor");
+	CameraControllable* mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
+
 	ScreenSpaceTriangle tri;
 	// init mesh
 	//Mesh mesh;
@@ -82,7 +85,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	//Mesh::CreateCube(&core, &mesh);
 	//Mesh::CreateSphere(&core, &mesh, 16, 24, 5);
 	//StaticMesh staticMesh(&core, "Models/acacia_003.gem");
-	AnimatedModel animMesh(&core, "Models/TRex.gem");
+	//AnimatedModel animMesh(&core, "Models/TRex.gem");
 	/*StaticMesh SkySphere;
 	SkySphere.CreateFromSphere(&core, 16, 24, 5, "Models/Textures/sky.png");
 	SkySphere.SetWorldScaling(Vec3(1000.f, 1000.f, 1000.f));
@@ -105,8 +108,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	//Pipelines::Get();
 	//Pipelines pipes;
 	
-	AnimationInstance animatedInstance;
-	animatedInstance.init(&animMesh.animation, 0);
+	//AnimationInstance animatedInstance;
+	//animatedInstance.init(&animMesh.animation, 0);
 
 	ConstantBuffer2 constBufferCPU2;
 	constBufferCPU2.time = 0;
@@ -220,6 +223,21 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			Matrix p = Matrix::perspective(0.01f, 10000.0f, (float)WIDTH / HEIGHT, 45.0f);
 			Matrix v = Matrix::lookAt(cameraPos, cameraPos + cameraForward, cameraUp);
 			gm->viewProjMatrix = v * p;
+
+			mainCameraController->updatePos(cameraPos);
+
+			// 步骤1：补偿模型Yaw角的90度偏移（根据模型正朝向调整+/-M_PI/2，这里用+M_PI/2示例）
+			float modelYaw = cameraYaw + M_PI / 2.0f;
+			// 步骤2：生成绕世界Y轴的Yaw旋转四元数
+			Quaternion qYaw = Quaternion::fromYRotation(-modelYaw);
+			// 步骤3：生成绕模型局部X轴的Pitch旋转四元数
+			Quaternion qPitch = Quaternion::fromXRotation(cameraPitch);
+			// 步骤4：组合旋转四元数（顺序：先Yaw后Pitch，四元数乘法是qPitch * qYaw，因为右乘）
+			Quaternion qTotal = qYaw*qPitch ;
+			// 步骤5：将四元数转为旋转矩阵（模型的最终旋转矩阵）
+			Matrix modelRotMatrix = qTotal.toMatrix();
+
+			mainCameraController->updateRotation(modelRotMatrix);
 		}
 		else
 		{

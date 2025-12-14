@@ -505,6 +505,7 @@ public:
 		mat.a[2][3] = -Dot(from, dir);
 		mat.a[3][3] = 1;
 		return mat;
+		
 	}
 	static Matrix perspective(const float n, const float f, float aspect, const float fov) // FOV in degrees, outputs transposed Matrix for DX
 	{
@@ -699,6 +700,60 @@ public:
 	Quaternion operator-()
 	{
 		return Quaternion(-a, -b, -c, -d);
+	}
+
+	static Quaternion fromAxisAngle(Vec3 axis, float angle)
+	{
+		Quaternion q;
+		float halfAngle = angle * 0.5f;
+		float sinHalf = sinf(halfAngle);
+		// 归一化轴向量（防止传入非单位向量）
+		axis = axis.normalize();
+		q.a = axis.x * sinHalf;
+		q.b = axis.y * sinHalf;
+		q.c = axis.z * sinHalf;
+		q.d = cosf(halfAngle);
+		q.Normalize(); // 确保四元数是单位四元数
+		return q;
+	}
+
+	// 快捷方法：绕X轴旋转的四元数（局部X轴）
+	static Quaternion fromXRotation(float angle)
+	{
+		return fromAxisAngle(Vec3(1.0f, 0.0f, 0.0f), angle);
+	}
+
+	// 快捷方法：绕Y轴旋转的四元数（世界/局部Y轴）
+	static Quaternion fromYRotation(float angle)
+	{
+		return fromAxisAngle(Vec3(0.0f, 1.0f, 0.0f), angle);
+	}
+
+	// 快捷方法：绕Z轴旋转的四元数
+	static Quaternion fromZRotation(float angle)
+	{
+		return fromAxisAngle(Vec3(0.0f, 0.0f, 1.0f), angle);
+	}
+
+	// ===== 新增：四元数转欧拉角（可选，用于调试）=====
+	Vec3 toEulerAngles()
+	{
+		Vec3 angles;
+		// 俯仰（X轴）
+		float sinPitch = 2.0f * (d * a - c * b);
+		angles.x = asinf(clamp(sinPitch, -1.0f, 1.0f));
+		// 偏航（Y轴）和滚转（Z轴）
+		if (fabs(sinPitch) < 0.9999f)
+		{
+			angles.y = atan2f(2.0f * (a * b + d * c), d * d - a * a - b * b + c * c);
+			angles.z = atan2f(2.0f * (b * c + d * a), d * d + a * a - b * b - c * c);
+		}
+		else
+		{
+			angles.y = atan2f(-2.0f * (a * c - d * b), d * d - a * a + b * b - c * c);
+			angles.z = 0.0f;
+		}
+		return angles;
 	}
 };
 

@@ -279,6 +279,7 @@ protected:
 	Vec3 worldPos;
 	Vec3 worldScaling;
 	Vec3 worldRotationRadian;
+	Matrix m_worldRotation;
 public:
 	WorldPosParam()
 	{
@@ -299,12 +300,20 @@ public:
 	void SetWorldRotationRadian(const Vec3& rotationRadian)
 	{
 		worldRotationRadian = rotationRadian;
+		m_worldRotation = Matrix::rotateY(worldRotationRadian.y) * Matrix::rotateX(worldRotationRadian.x) * Matrix::rotateZ(worldRotationRadian.z);
 		updateWorldMatrix();
 	}
+
+	void SetRotationMatrix(Matrix rotMat)
+	{
+		m_worldRotation = rotMat;
+		updateWorldMatrix();
+	}
+
 	void updateWorldMatrix()
 	{
-		Matrix rotation = Matrix::rotateZ(worldRotationRadian.z)*Matrix::rotateY(worldRotationRadian.y)*Matrix::rotateX(worldRotationRadian.x) ;
-		m_worldPosMat = Matrix::scaling(worldScaling) * rotation *Matrix::translation(worldPos);
+		
+		m_worldPosMat = Matrix::scaling(worldScaling) * m_worldRotation * Matrix::translation(worldPos) ;
 	}
 };
 

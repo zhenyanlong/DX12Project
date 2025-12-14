@@ -1,6 +1,6 @@
-//#pragma once
-//#include "Vec3.h"
-//#include "Core.h"
+#pragma once
+#include "Vec3.h"
+#include "Core.h"
 //#include "Window.h"
 //// 相机可控接口：所有需要被摄像机控制的Actor必须实现此接口
 //class ICameraControllable
@@ -195,3 +195,15 @@
 //	void UpdateViewMatrix(Matrix projectionMatrix);
 //	
 //};
+
+class CameraControllable
+{
+public:
+	virtual void updatePos(Vec3 pos) = 0;
+
+	virtual void updateRotation(Vec3 rot) = 0;
+	
+	virtual void updateRotation(Matrix rotMat) = 0;
+
+	virtual void updateWorldMatrix(Vec3 pos, float yaw, float pitch) = 0;
+};

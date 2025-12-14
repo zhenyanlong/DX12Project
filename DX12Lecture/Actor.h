@@ -1,7 +1,7 @@
 #pragma once
 #include "Mesh.h"
 #include "GeneralEvent.h"
-
+#include "ICameraControllable.h"
 class Actor	: public GeneralEvent
 {
 	// collision system
@@ -40,7 +40,7 @@ public:
 	virtual void draw() override;
 };
 
-class FPSActor : public Actor
+class FPSActor : public Actor, public CameraControllable 
 {
 	AnimatedModel* fps_Mesh;	
 	AnimationInstance* animatedInstance;
@@ -48,4 +48,12 @@ class FPSActor : public Actor
 public:
 	FPSActor();
 	virtual void draw() override;
+
+	virtual void updatePos(Vec3 pos) override;
+
+	virtual void updateRotation(Vec3 rot) override;
+
+	virtual void updateRotation(Matrix rotMat) override;
+
+	virtual void updateWorldMatrix(Vec3 pos, float yaw, float pitch) override;
 };

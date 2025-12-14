@@ -21,6 +21,16 @@ public:
 
 	}
 
+	Actor* GetActor(std::string name)
+	{
+		auto findIt = m_actors.find(name);
+		if (findIt == m_actors.end())
+		{
+			return nullptr;
+		}
+		return findIt->second;
+	}
+
 	virtual void draw() = 0;
 };
 
