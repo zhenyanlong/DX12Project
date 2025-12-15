@@ -121,12 +121,17 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	
 
 	// ===================== FPS相机核心状态 =====================
-	Vec3 cameraPos = Vec3(40.0f, 15.0f, 0.0f);  // 相机初始位置（FPS中位置由WASD控制）
+	//Vec3 cameraPos = Vec3(40.0f, 15.0f, 0.0f);  // 相机初始位置（FPS中位置由WASD控制）
+	//Vec3 lastCameraPos = cameraPos;
 	float cameraYaw = -M_PI / 2;                  // 偏航角（初始朝向Z轴负方向，对应FPS初始向前）
 	float cameraPitch = 0.0f;                   // 俯仰角（初始水平）
 	bool mouseLocked = LOCK_MOUSE_ON_START;     // 鼠标是否锁定
 	POINT windowCenter;                         // 窗口中心坐标（用于鼠标重置）
 
+	if (mainCameraController)
+	{
+		mainCameraController->updatePos(Vec3(40.0f, 15.0f, 0.0f));
+	}
 	// 计算窗口中心（相对于屏幕）
 	RECT windowRect;
 	GetWindowRect(win.hwnd, &windowRect);
@@ -207,17 +212,25 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			// 计算相机右方向（用于WASD横向移动）
 			Vec3 cameraRight = Cross(cameraForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
 			Vec3 cameraUp = Vec3(0.0f, 1.0f, 0.0f); // FPS固定上方向为世界Y轴
+			// ===== 重构：先计算输入的移动向量（不直接修改位置）=====
+			Vec3 desiredMove = Vec3(0, 0, 0);
+			if (win.keys['W']) desiredMove += cameraForward * CAMERA_MOVE_SPEED * dt;
+			if (win.keys['S']) desiredMove -= cameraForward * CAMERA_MOVE_SPEED * dt;
+			if (win.keys['A']) desiredMove += cameraRight * CAMERA_MOVE_SPEED * dt;
+			if (win.keys['D']) desiredMove -= cameraRight * CAMERA_MOVE_SPEED * dt;
+			if (win.keys['Q']) desiredMove.y -= CAMERA_MOVE_SPEED * dt;
+			if (win.keys['E']) desiredMove.y += CAMERA_MOVE_SPEED * dt;
 
-			// ===================== 2. WASD+QE控制相机移动 =====================
-			// W/S：沿相机朝向前后移动
-			if (win.keys['W']) cameraPos += cameraForward * CAMERA_MOVE_SPEED * dt;
-			if (win.keys['S']) cameraPos -= cameraForward * CAMERA_MOVE_SPEED * dt;
-			// A/D：沿相机右方向左右平移
-			if (win.keys['A']) cameraPos += cameraRight * CAMERA_MOVE_SPEED * dt;
-			if (win.keys['D']) cameraPos -= cameraRight * CAMERA_MOVE_SPEED * dt;
-			// Q/E：垂直上下移动（世界Y轴方向）
-			if (win.keys['Q']) cameraPos.y -= CAMERA_MOVE_SPEED * dt;
-			if (win.keys['E']) cameraPos.y += CAMERA_MOVE_SPEED * dt;
+			// ===== 碰撞检测：获取可移动的向量 =====
+			auto collidableActors = myWorld->getCollidableActors();
+			Vec3 resolvedMove = CollisionResolver::resolveSlidingCollision(mainActor, desiredMove, collidableActors, 0.01f);
+
+			// ===== 应用移动到 mainActor =====
+			Vec3 currentPos = mainActor->getWorldPos();
+			mainActor->setWorldPos(currentPos + resolvedMove);
+
+			// ===== 从 mainActor 获取相机位置 =====
+			Vec3 cameraPos = mainActor->getWorldPos();
 
 			// ===================== 3. 更新观察矩阵 =====================
 			Matrix p = Matrix::perspective(0.01f, 10000.0f, (float)WIDTH / HEIGHT, 45.0f);
@@ -236,6 +249,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			Quaternion qTotal = qYaw*qPitch ;
 			// 步骤5：将四元数转为旋转矩阵（模型的最终旋转矩阵）
 			Matrix modelRotMatrix = qTotal.toMatrix();
+
+			
 
 			mainCameraController->updateRotation(modelRotMatrix);
 		}

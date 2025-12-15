@@ -130,6 +130,27 @@ public:
 		m_currentLevel = level;
 	}
 
+
+	// 新增：添加Actor到世界
+	void addActor(std::string name, Actor* actor)
+	{
+		GetLevel()->AddActor(name, actor);
+		//actor->BeginPlay();
+	}
+
+	// 新增：获取所有可碰撞Actor
+	std::vector<Actor*> getCollidableActors() const
+	{
+		std::vector<Actor*> collidable;
+		for (auto actor : SingleInstance->GetLevel()->GetAllActors())
+		{
+			
+			if (actor.second->isCollidable())
+				collidable.push_back(actor.second);
+		}
+		return collidable;
+	}
+
 	// time getter and setter
 	void UpdateTime()
 	{

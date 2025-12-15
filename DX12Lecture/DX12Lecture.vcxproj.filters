@@ -105,6 +105,9 @@
     <ClInclude Include="ICameraControllable.h">
       <Filter>Header Files\Actors</Filter>
     </ClInclude>
+    <ClInclude Include="Collision.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Window.cpp">
@@ -163,6 +166,9 @@
     </ClCompile>
     <ClCompile Include="ICameraControllable.cpp">
       <Filter>Source Files\Actors</Filter>
+    </ClCompile>
+    <ClCompile Include="Collision.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

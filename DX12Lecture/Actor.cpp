@@ -79,9 +79,12 @@ FPSActor::FPSActor()
 {
 	World* myWorld = World::Get();
 	fps_Mesh = new AnimatedModel(myWorld->GetCore(), "Models/Uzi.gem");
-	fps_Mesh->SetWorldScaling(Vec3(1.f, 1.f, 1.f));
+	fps_Mesh->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::Sphere);
 	animatedInstance = new AnimationInstance();
 	animatedInstance->init(&fps_Mesh->animation, 0);
+	calculateLocalCollisionShape();
 }
 
 void FPSActor::draw()
@@ -109,4 +112,71 @@ void FPSActor::updateWorldMatrix(Vec3 pos, float yaw, float pitch)
 {
 	/*Matrix rotation = Matrix::rotateY(m_yaw) * Matrix::rotateX(m_pitch);
 	return Matrix::translation(m_position) * rotation;*/
+}
+
+void FPSActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!fps_Mesh)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto* mesh : fps_Mesh->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh->getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+BoxActor::BoxActor()
+{
+	World* myWorld = World::Get();
+	box = new StaticMesh(myWorld->GetCore(), "Models/box_024.gem");
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::AABB);
+	box->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
+	calculateLocalCollisionShape();
+}
+
+void BoxActor::draw()
+{
+	World* myWorld = World::Get();
+	box->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+}
+
+void BoxActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!box)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto mesh : box->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
 }

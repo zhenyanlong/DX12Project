@@ -143,6 +143,7 @@
   <ItemGroup>
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Actors\Test.h" />
+    <ClInclude Include="Collision.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Core.h" />
     <ClInclude Include="DescriptorHeap.h" />
@@ -167,6 +168,7 @@
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Actors\Test.cpp" />
+    <ClCompile Include="Collision.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Core.cpp" />
     <ClCompile Include="DescriptorHeap.cpp" />

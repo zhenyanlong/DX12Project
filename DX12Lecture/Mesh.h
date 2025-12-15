@@ -220,7 +220,12 @@ public:
 class Mesh
 {
 public:
-	
+	enum class VertexType
+	{
+		Static,     // 静态顶点（STATIC_VERTEX）
+		Animated,   // 动画顶点（ANIMATED_VERTEX）
+		Unknown     // 未知类型（通用void*顶点，暂不支持）
+	};
 
 	ID3D12Resource* vertexBuffer;
 	ID3D12Resource* indexBuffer;
@@ -231,19 +236,29 @@ public:
 
 	//D3D12_INPUT_ELEMENT_DESC inputLayout[2];
 	//D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	std::vector<STATIC_VERTEX> m_staticVertices;    // 静态顶点数据
+	std::vector<ANIMATED_VERTEX> m_animatedVertices;// 动画顶点数据
+	VertexType m_vertexType = VertexType::Unknown;  // 当前顶点类型
+	
 public:
 	void init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
 		unsigned int* indices, int numIndices);
 
 	void init(Core* core, std::vector<STATIC_VERTEX> vertices, std::vector<unsigned int> indices)
 	{
-		init(core, &vertices[0], sizeof(STATIC_VERTEX), vertices.size(), &indices[0], indices.size());
+		m_staticVertices = std::move(vertices);
+		m_vertexType = VertexType::Static;
+
+		init(core, &m_staticVertices[0], sizeof(STATIC_VERTEX), m_staticVertices.size(), &indices[0], indices.size());
 		inputLayoutDesc = VertexLayoutCache::getStaticLayout();
 	}
 
 	void init(Core* core, std::vector<ANIMATED_VERTEX> vertices, std::vector<unsigned int> indices)
 	{
-		init(core, &vertices[0], sizeof(ANIMATED_VERTEX), vertices.size(), &indices[0], indices.size());
+		m_animatedVertices = std::move(vertices);
+		m_vertexType = VertexType::Animated;
+
+		init(core, &m_animatedVertices[0], sizeof(ANIMATED_VERTEX), m_animatedVertices.size(), &indices[0], indices.size());
 		inputLayoutDesc = VertexLayoutCache::getAnimatedLayout();
 	}
 
@@ -269,7 +284,49 @@ public:
 		v.tv = tv;
 		return v;
 	}
+	// ===== 新增：getVertices方法（返回所有顶点的位置）=====
+	std::vector<Vec3> getVertices() const
+	{
+		std::vector<Vec3> vertices;
+		switch (m_vertexType)
+		{
+		case VertexType::Static:
+			// 提取静态顶点的位置
+			vertices.reserve(m_staticVertices.size());
+			for (const auto& v : m_staticVertices)
+			{
+				vertices.push_back(v.pos);
+			}
+			break;
 
+		case VertexType::Animated:
+			// 提取动画顶点的位置
+			vertices.reserve(m_animatedVertices.size());
+			for (const auto& v : m_animatedVertices)
+			{
+				vertices.push_back(v.pos);
+			}
+			break;
+
+		case VertexType::Unknown:
+			// 通用void*顶点暂不支持（可根据需求扩展）
+			std::cerr << "Mesh: Unknown vertex type, cannot get vertices!" << std::endl;
+			break;
+		}
+		return vertices;
+	}
+
+	// ===== 重载：获取经过模型矩阵变换后的世界空间顶点（可选，用于碰撞体的世界空间计算）=====
+	std::vector<Vec3> getVertices(Matrix& modelMatrix) const
+	{
+		std::vector<Vec3> vertices = getVertices();
+		// 将局部空间顶点变换到世界空间
+		for (auto& v : vertices)
+		{
+			v = modelMatrix.mulPoint(v); // 假设Matrix类有transformPoint方法（点变换）
+		}
+		return vertices;
+	}
 };
 
 class WorldPosParam
@@ -287,6 +344,24 @@ public:
 		worldScaling = Vec3(0.01f, 0.01f, 0.01f);
 		updateWorldMatrix();
 	}
+	inline Vec3 GetWorldPos() const
+	{
+		return worldPos;
+	}
+	inline Vec3 GetWorldScale() const
+	{
+		return worldScaling;
+	}
+	inline Vec3 GetWorldRotationRadian() const
+	{
+		return worldRotationRadian;
+	}
+
+	inline Matrix GetWorldMatrix() const
+	{
+		return m_worldPosMat;
+	}
+
 	void SetWorldPos(const Vec3& pos)
 	{
 		worldPos = pos;

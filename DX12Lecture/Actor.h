@@ -2,10 +2,76 @@
 #include "Mesh.h"
 #include "GeneralEvent.h"
 #include "ICameraControllable.h"
+#include "Collision.h"
 class Actor	: public GeneralEvent
 {
 	// collision system
+protected:
+	CollisionShapeType m_collisionShapeType = CollisionShapeType::None;
+	AABB m_localAABB;       // 局部空间AABB（相对于Actor原点）
+	Sphere m_localSphere;   // 局部空间Sphere（相对于Actor原点）
+	bool m_isCollidable = false; // 是否可碰撞
 
+public:
+	virtual ~Actor() = default;
+	//virtual void draw() = 0;
+
+	// 碰撞体配置接口
+	void setCollidable(bool enable) { m_isCollidable = enable; }
+	bool isCollidable() const { return m_isCollidable; }
+	void setCollisionShapeType(CollisionShapeType type) { m_collisionShapeType = type; }
+	CollisionShapeType getCollisionShapeType() const { return m_collisionShapeType; }
+
+	// 获取局部碰撞体
+	const AABB& getLocalAABB() const { return m_localAABB; }
+	const Sphere& getLocalSphere() const { return m_localSphere; }
+
+	// 获取世界空间碰撞体（考虑Actor的位置/旋转/缩放）
+	virtual AABB getWorldAABB() const
+	{
+		if (m_collisionShapeType != CollisionShapeType::AABB)
+			return AABB();
+
+		Matrix worldMat = getWorldMatrix();
+		auto vertices = m_localAABB.getVertices();
+		AABB worldAABB;
+		worldAABB.reset();
+		for (const auto& v : vertices)
+		{
+			Vec3 worldV = worldMat.mulPoint(v); // 假设Matrix有转换点的方法
+			worldAABB.extend(worldV);
+		}
+		return worldAABB;
+	}
+
+	virtual Sphere getWorldSphere() const
+	{
+		if (m_collisionShapeType != CollisionShapeType::Sphere)
+			return Sphere();
+
+		Matrix worldMat = getWorldMatrix();
+		Vec3 worldCentre = worldMat.mulPoint(m_localSphere.centre);
+		// Vec3 scale = worldMat.getScale(); // 假设Matrix有获取缩放的方法
+		Vec3 scale = getWorldScale();
+		float worldRadius = m_localSphere.radius * std::max({ scale.x, scale.y, scale.z });
+		return Sphere(worldCentre, worldRadius);
+	}
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() = 0;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const = 0;
+
+	virtual Vec3 getWorldPos() const = 0;
+	virtual void setWorldPos(Vec3 worldPos) = 0;
+
+	virtual Vec3 getWorldScale() const = 0;
+	virtual void setWorldScale(Vec3 worldScale) = 0;
+
+	virtual Vec3 getWorldRotation() const = 0;
+	virtual void setWorldRotation(Vec3 worldRotation) = 0;
+	// **** world info interface ****//
 public:
 	// draw
 	virtual void draw() = 0;
@@ -17,6 +83,22 @@ class SkyBoxActor: public Actor
 public:
 	SkyBoxActor();
 	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override {}
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return skybox->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return skybox->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { skybox->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return skybox->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { skybox->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return skybox->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { skybox->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
 };
 
 class TreeActor : public Actor
@@ -29,6 +111,22 @@ class TreeActor : public Actor
 public:
 	TreeActor(int count = 50);
 	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override {}
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return willow->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return willow->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { willow->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return willow->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { willow->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return willow->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { willow->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
 };
 
 class WaterActor : public Actor
@@ -38,6 +136,22 @@ class WaterActor : public Actor
 public:
 	WaterActor();
 	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override {}
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return water->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return water->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { water->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return water->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { water->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return water->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { water->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
 };
 
 class FPSActor : public Actor, public CameraControllable 
@@ -56,4 +170,44 @@ public:
 	virtual void updateRotation(Matrix rotMat) override;
 
 	virtual void updateWorldMatrix(Vec3 pos, float yaw, float pitch) override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return fps_Mesh->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return fps_Mesh->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { fps_Mesh->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return fps_Mesh->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { fps_Mesh->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return fps_Mesh->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { fps_Mesh->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+};
+
+class BoxActor : public Actor
+{
+	StaticMesh* box;
+public:
+	BoxActor();
+	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return box->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return box->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { box->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return box->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { box->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return box->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { box->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
 };

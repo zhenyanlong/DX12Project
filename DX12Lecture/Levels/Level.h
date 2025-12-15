@@ -30,6 +30,31 @@ public:
 		}
 		return findIt->second;
 	}
+	std::map<std::string, Actor*>& GetAllActors() 
+	{
+		return m_actors;
+	}
+	void AddActor(std::string name, Actor* actor)
+	{
+		// check if exist actor with same name
+		std::string realName = name;
+		int i = 0;
+		do
+		{
+			auto findIt = m_actors.find(name);
+			if (findIt != m_actors.end())
+			{
+				realName = name + std::to_string(i);
+			}
+			else
+			{
+				m_actors[realName] = actor;
+				break;
+			}
+		} while (true);
+		 
+		
+	}
 
 	virtual void draw() = 0;
 };
