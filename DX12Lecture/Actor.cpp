@@ -180,3 +180,45 @@ void BoxActor::calculateLocalCollisionShape()
 	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
+
+GroundActor::GroundActor()
+{
+	World* myWorld = World::Get();
+	ground = new StaticMesh();
+	ground->CreateFromPlane(myWorld->GetCore(), 10000, 1000, 1000);
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::AABB);
+	calculateLocalCollisionShape();
+}
+
+void GroundActor::draw()
+{
+	World* myWorld = World::Get();
+	
+	ground->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+}
+
+void GroundActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!ground)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto mesh : ground->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}

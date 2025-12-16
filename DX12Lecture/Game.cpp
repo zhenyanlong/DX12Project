@@ -21,8 +21,12 @@ const float CAMERA_MOVE_SPEED = 15.0f;    // 移动速度（单位/秒）
 const float MOUSE_SENSITIVITY = 0.15f;    // 鼠标灵敏度（弧度/像素，越小越慢）
 const bool LOCK_MOUSE_ON_START = true;    // 启动时自动锁定鼠标
 
-
-
+// ===== 新增：重力与跳跃相关常量 =====
+const float GRAVITY = 98.0f;              // 重力加速度（游戏中放大，更有手感，实际9.8）
+const float GROUND_THRESHOLD = 0.01f;     // 落地检测的垂直阈值（避免微小抖动）
+const float JUMP_FORCE = 30.0f;           // 跳跃力度（可选）
+const float GROUND_ADJUST = 0.01f;        // 地面吸附的微小偏移（防止悬浮）
+bool IsGravityMode = true;
 
 
 void draw(Core* core, PSOManager& psos, Mesh& prim) {
@@ -128,10 +132,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	bool mouseLocked = LOCK_MOUSE_ON_START;     // 鼠标是否锁定
 	POINT windowCenter;                         // 窗口中心坐标（用于鼠标重置）
 
-	if (mainCameraController)
-	{
-		mainCameraController->updatePos(Vec3(40.0f, 15.0f, 0.0f));
-	}
+	// ===== 新增：重力与落地状态变量 =====
+	float verticalVelocity = 0.0f; // 垂直速度（Y轴，向上为正）
+	bool isGrounded = true;       // 是否落地（站在地面上）
+
+	
 	// 计算窗口中心（相对于屏幕）
 	RECT windowRect;
 	GetWindowRect(win.hwnd, &windowRect);
@@ -144,6 +149,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		ClipCursor(&windowRect);  // 锁定鼠标在窗口内
 		ShowCursor(FALSE);        // 隐藏鼠标指针
 		SetCursorPos(windowCenter.x, windowCenter.y); // 重置鼠标到中心
+	}
+	if (mainCameraController)
+	{
+		mainCameraController->updatePos(Vec3(40.0f, 15.0f, 0.0f));
 	}
 	while (true)
 	{
@@ -204,30 +213,116 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 			// 根据欧拉角计算相机朝向（FPS中相机上方向固定为世界Y轴）
 			Vec3 cameraForward;
+			Vec3 moveForward;
 			cameraForward.x = cos(cameraYaw) * cos(cameraPitch);
 			cameraForward.y = sin(cameraPitch);
+			//cameraForward.y = 0.f;
 			cameraForward.z = sin(cameraYaw) * cos(cameraPitch);
 			cameraForward = cameraForward.normalize();
 
+			moveForward.x = cos(cameraYaw); // 无俯仰角影响的水平向前
+			moveForward.y = 0.0f;
+			moveForward.z = sin(cameraYaw);
+			moveForward = moveForward.normalize();
+			/*if (IsGravityMode)
+			{
+				cameraForward.y = 0.f;
+			}*/
 			// 计算相机右方向（用于WASD横向移动）
 			Vec3 cameraRight = Cross(cameraForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
 			Vec3 cameraUp = Vec3(0.0f, 1.0f, 0.0f); // FPS固定上方向为世界Y轴
+
+			Vec3 moveRight = Cross(moveForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
 			// ===== 重构：先计算输入的移动向量（不直接修改位置）=====
 			Vec3 desiredMove = Vec3(0, 0, 0);
-			if (win.keys['W']) desiredMove += cameraForward * CAMERA_MOVE_SPEED * dt;
-			if (win.keys['S']) desiredMove -= cameraForward * CAMERA_MOVE_SPEED * dt;
-			if (win.keys['A']) desiredMove += cameraRight * CAMERA_MOVE_SPEED * dt;
-			if (win.keys['D']) desiredMove -= cameraRight * CAMERA_MOVE_SPEED * dt;
-			if (win.keys['Q']) desiredMove.y -= CAMERA_MOVE_SPEED * dt;
-			if (win.keys['E']) desiredMove.y += CAMERA_MOVE_SPEED * dt;
+			Vec3 gravityMove = Vec3(0.f, 0.f, 0.f);
+			if (IsGravityMode)
+			{
+				
 
+				if (win.keys['W']) desiredMove += moveForward * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['S']) desiredMove -= moveForward * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['A']) desiredMove += moveRight * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['D']) desiredMove -= moveRight * CAMERA_MOVE_SPEED * dt;
+				
+				desiredMove.y = 0.f;
+				//desiredMove.normalize();
+				//if (win.keys['Q']) desiredMove.y -= CAMERA_MOVE_SPEED * dt;
+				//if (win.keys['E']) desiredMove.y += CAMERA_MOVE_SPEED * dt;
+				if (win.keys['F']) mainActor->setWorldPos(Vec3(40.f,15.f,0.f));
+				// ===== 步骤2：应用重力与跳跃逻辑 =====
+			// 1. 重力：仅当不在地面时，垂直速度叠加重力加速度（向下为负）
+				//if (!isGrounded)
+				//{
+					verticalVelocity -= GRAVITY * dt; // Y轴向上，重力向下，所以减
+				//}
+
+				// 2. 跳跃：仅当落地时，按空格触发（可选）
+				if (win.keys[VK_SPACE] && win.keyJustPressed[VK_SPACE] && isGrounded)
+				{
+					verticalVelocity = JUMP_FORCE; // 给向上的力
+					isGrounded = false;            // 离开地面
+					//win.keyJustPressed[VK_SPACE] = false; // 防止连续跳跃
+				}
+
+				// 3. 合并垂直移动（重力/跳跃）到总移动向量
+				gravityMove = Vec3(0, verticalVelocity*dt , 0);
+				desiredMove += gravityMove;
+			}
+			else
+			{
+				
+
+				if (win.keys['W']) desiredMove += cameraForward * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['S']) desiredMove -= cameraForward * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['A']) desiredMove += cameraRight * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['D']) desiredMove -= cameraRight * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['Q']) desiredMove.y -= CAMERA_MOVE_SPEED * dt;
+				if (win.keys['E']) desiredMove.y += CAMERA_MOVE_SPEED * dt;
+			}
+			
+			
+			
 			// ===== 碰撞检测：获取可移动的向量 =====
 			auto collidableActors = myWorld->getCollidableActors();
 			Vec3 resolvedMove = CollisionResolver::resolveSlidingCollision(mainActor, desiredMove, collidableActors, 0.01f);
 
-			// ===== 应用移动到 mainActor =====
-			Vec3 currentPos = mainActor->getWorldPos();
-			mainActor->setWorldPos(currentPos + resolvedMove);
+			if (IsGravityMode)
+			{
+				// ===== 步骤4：处理落地逻辑（核心）=====
+				//isGrounded = false; // 先默认未落地
+				// 判断条件：期望的垂直移动是向下（gravityMove.y < 0），且实际垂直移动远小于期望（被地面阻挡）
+				float verticalDesired = gravityMove.y; // 期望的垂直移动（向下为负）
+				float verticalResolved = resolvedMove.y; // 实际的垂直移动
+				if (verticalDesired < -GROUND_THRESHOLD && abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD)
+				{
+					// 落地：重置垂直速度，标记为落地
+					verticalVelocity = 0.0f;
+					isGrounded = true;
+
+					// 地面吸附：轻微上移Actor，确保稳定站在地面（避免悬浮/抖动）
+					Vec3 currentPos = mainActor->getWorldPos();
+					mainActor->setWorldPos(Vec3(currentPos.x, currentPos.y, currentPos.z));
+				}
+				// 可选：处理撞到天花板（垂直移动向上，被阻挡）
+				else if (verticalDesired > GROUND_THRESHOLD && abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD)
+				{
+					verticalVelocity = 0.0f; // 重置垂直速度，停止上升
+				}
+				else
+				{
+					// ===== 应用移动到 mainActor =====
+					Vec3 currentPos = mainActor->getWorldPos();
+					mainActor->setWorldPos(currentPos + resolvedMove);
+				}
+			}
+			else
+			{
+				// ===== 应用移动到 mainActor =====
+				Vec3 currentPos = mainActor->getWorldPos();
+				mainActor->setWorldPos(currentPos + resolvedMove);
+			}
+			
 
 			// ===== 从 mainActor 获取相机位置 =====
 			Vec3 cameraPos = mainActor->getWorldPos();

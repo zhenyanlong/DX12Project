@@ -351,7 +351,7 @@ StaticMesh::StaticMesh()
 {
 }
 
-void StaticMesh::CreateFromPlane(Core* core, float size, int xSegments, int zSegments)
+void StaticMesh::CreateFromPlane(Core* core, float size, int xSegments, int zSegments, std::string texName)
 {
 	std::vector<STATIC_VERTEX> vertices;
 	std::vector<unsigned int> indices;
@@ -376,6 +376,12 @@ void StaticMesh::CreateFromPlane(Core* core, float size, int xSegments, int zSeg
 			vertices.push_back(Mesh::addVertex(Pos, Normal, u ,v, Tangent));
 		}
 	}
+	
+	TextureManager* texMgr = TextureManager::Get();
+	textureFilenames.push_back(texName);
+	texMgr->loadTexture(core, texName);
+	
+	
 
 	// 生成索引（三角面）
 	for (int z = 0; z < zSegments; z++)

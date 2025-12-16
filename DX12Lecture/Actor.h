@@ -211,3 +211,27 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { box->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 };
+
+class GroundActor : public Actor
+{
+	StaticMesh* ground;
+public:
+	GroundActor();
+	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return ground->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return ground->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { ground->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return ground->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { ground->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return ground->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { ground->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+};
