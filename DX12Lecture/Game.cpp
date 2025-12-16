@@ -135,6 +135,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	// ===== 新增：重力与落地状态变量 =====
 	float verticalVelocity = 0.0f; // 垂直速度（Y轴，向上为正）
 	bool isGrounded = true;       // 是否落地（站在地面上）
+	bool firstframe = true;
 
 	
 	// 计算窗口中心（相对于屏幕）
@@ -254,7 +255,16 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			// 1. 重力：仅当不在地面时，垂直速度叠加重力加速度（向下为负）
 				//if (!isGrounded)
 				//{
+				if (!firstframe)
+				{
 					verticalVelocity -= GRAVITY * dt; // Y轴向上，重力向下，所以减
+					
+				}
+				else
+				{
+					firstframe = false;
+				}
+					
 				//}
 
 				// 2. 跳跃：仅当落地时，按空格触发（可选）
