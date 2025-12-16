@@ -1,5 +1,6 @@
 #include "Actor.h"
 #include "World.h"
+#include "Animation/FPSAnimationStateMachine.h"
 #define M_PI       3.14159265358979323846
 SkyBoxActor::SkyBoxActor()
 {
@@ -85,12 +86,22 @@ FPSActor::FPSActor()
 	animatedInstance = new AnimationInstance();
 	animatedInstance->init(&fps_Mesh->animation, 0);
 	calculateLocalCollisionShape();
+
+	// 新增：初始化动画状态机
+	animStateMachine = new FPSAnimationStateMachine(fps_Mesh, animatedInstance);
+}
+
+FPSActor::~FPSActor()
+{
+	delete animStateMachine;
+	delete animatedInstance;
+	delete fps_Mesh;
 }
 
 void FPSActor::draw()
 {
 	World* myWorld = World::Get();
-	fps_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime());
+	fps_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime(), animStateMachine);
 }
 
 void FPSActor::updatePos(Vec3 pos)
@@ -137,6 +148,17 @@ void FPSActor::calculateLocalCollisionShape()
 
 	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+void FPSActor::OnBeginPlay()
+{
+}
+
+void FPSActor::OnTick(float dt)
+{
+	if (animStateMachine) {
+		animStateMachine->Update(dt); // 调用状态机更新
+	}
 }
 
 BoxActor::BoxActor()

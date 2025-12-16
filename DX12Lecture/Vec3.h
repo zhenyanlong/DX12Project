@@ -533,6 +533,18 @@ public:
 			0, 0, 0, 1
 		);
 	}
+
+	// ===== 新增：矩阵线性插值（逐元素插值）=====
+	static Matrix lerp(const Matrix& a, const Matrix& b, float t)
+	{
+		Matrix result;
+		t = clamp(t, 0.0f, 1.0f); // 限制t在0~1之间
+		for (int i = 0; i < 16; i++)
+		{
+			result.m[i] = a.m[i] * (1.0f - t) + b.m[i] * t;
+		}
+		return result;
+	}
 };
 
 // 简化矩阵乘法运算符（可选）

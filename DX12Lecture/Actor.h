@@ -3,6 +3,7 @@
 #include "GeneralEvent.h"
 #include "ICameraControllable.h"
 #include "Collision.h"
+#include "Animation/FPSAnimationStateMachine.h"
 class Actor	: public GeneralEvent
 {
 	// collision system
@@ -158,9 +159,12 @@ class FPSActor : public Actor, public CameraControllable
 {
 	AnimatedModel* fps_Mesh;	
 	AnimationInstance* animatedInstance;
+public:
+	FPSAnimationStateMachine* animStateMachine; // 新增：动画状态机
 	
 public:
 	FPSActor();
+	virtual ~FPSActor() override; // 新增：析构函数释放资源
 	virtual void draw() override;
 
 	virtual void updatePos(Vec3 pos) override;
@@ -186,6 +190,9 @@ public:
 	virtual Vec3 getWorldRotation() const override { return fps_Mesh->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { fps_Mesh->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+
+	virtual void OnBeginPlay() override;
+	virtual void OnTick(float dt) override;
 };
 
 class BoxActor : public Actor

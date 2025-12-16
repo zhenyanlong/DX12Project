@@ -366,7 +366,26 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			Matrix v = Matrix::lookAt(cameraPos, Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
 			gm->viewProjMatrix = v * p;*/
 		}
-		
+		// 新增：检测移动状态（WASD是否按下）
+		bool isMoving = win.keys['W'] || win.keys['S'] || win.keys['A'] || win.keys['D'];
+		FPSActor* fpsActor = dynamic_cast<FPSActor*>(mainActor);
+		FPSAnimationStateMachine* fpsAnimation = fpsActor->animStateMachine;
+		if (fpsAnimation) {
+			fpsAnimation->SetMoving(isMoving); // 设置移动状态（控制Idle/Walk切换）
+			// 检测换弹（R键）
+			if (win.keys['R'] ) {
+				fpsAnimation->TriggerReload();
+				//win.keyJustPressed['R'] = false;
+			}
+			// 检测射击（鼠标左键）
+			if (win.keys[VK_LBUTTON] && win.keyJustPressed[VK_LBUTTON]) {
+				fpsAnimation->TriggerFire();
+				//win.keyJustPressed[VK_LBUTTON] = false;
+			}
+		}
+
+		fpsActor->Tick(myWorld->GetDeltatime());
+
 		// draw
 		myWorld->ExecuteDraw();
 		//SkySphere.draw(&core, myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());

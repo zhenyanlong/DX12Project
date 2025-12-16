@@ -143,6 +143,9 @@
   <ItemGroup>
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Actors\Test.h" />
+    <ClInclude Include="Animation\AnimationState.h" />
+    <ClInclude Include="Animation\AnimationStateMachine.h" />
+    <ClInclude Include="Animation\FPSAnimationStateMachine.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="ConstantBuffer.h" />
     <ClInclude Include="Core.h" />
@@ -168,6 +171,9 @@
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Actors\Test.cpp" />
+    <ClCompile Include="Animation\AnimationState.cpp" />
+    <ClCompile Include="Animation\AnimationStateMachine.cpp" />
+    <ClCompile Include="Animation\FPSAnimationStateMachine.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />
     <ClCompile Include="Core.cpp" />

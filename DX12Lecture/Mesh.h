@@ -416,6 +416,7 @@ public:
 	void drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes);
 	void drawInstances(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, std::vector<Matrix>* const instanceMatrices, int count);
 };
+class AnimationStateMachine;
 
 class AnimatedModel : public WorldPosParam
 {
@@ -438,7 +439,7 @@ public:
 	void draw(Core* core, PSOManager* psos, std::string pipeName, Pipelines* pipes,
 		AnimationInstance* instance, const std::string& animName, float dt, int instanceCount = 1);
 
-	void drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt);
+	void drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt, AnimationStateMachine* fpsSM = nullptr);
 	
 };
 

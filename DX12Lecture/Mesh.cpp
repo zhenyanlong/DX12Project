@@ -3,6 +3,7 @@
 #include "TextureManager.h"
 #include "World.h"
 #include "StringUtils.h"
+#include "Animation/FPSAnimationStateMachine.h"
 void Mesh::init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
 	unsigned int* indices, int numIndices)
 
@@ -581,7 +582,7 @@ void AnimatedModel::draw(Core* core, PSOManager* psos, std::string pipeName, Pip
 	// ===== 步骤1：动画实例的前置更新（核心：处理动画播放、骨骼矩阵计算）=====
 	if (instance != nullptr)
 	{
-		// 检查动画是否存在，不存在则取第一个动画
+		// 检查动画是否存在，不存在则取第一个（保留原有逻辑）
 		std::string targetAnimName = animName;
 		if (!instance->animation->hasAnimation(targetAnimName))
 		{
@@ -592,16 +593,16 @@ void AnimatedModel::draw(Core* core, PSOManager* psos, std::string pipeName, Pip
 			}
 			else
 			{
-				// 无动画时直接返回
 				return;
 			}
 		}
 
-		// 更新动画实例（推进时间、计算骨骼矩阵）
-		instance->update(targetAnimName, dt);
+		// 更新动画实例（使用动态的targetAnimName）
+		//instance->update(targetAnimName, dt);
 
-		// 动画结束后重置时间（循环播放）
-		if (instance->animationFinished())
+		// 动画结束后重置（循环动画如Idle/Walk需要，单次动画如Reload/Fire由状态机处理）
+		// 注意：单次动画的结束逻辑移到状态机，这里只处理循环动画
+		if (instance->animationFinished() && (targetAnimName == "04 idle" || targetAnimName == "06 walk"))
 		{
 			instance->resetAnimationTime();
 		}
@@ -708,7 +709,7 @@ void AnimatedModel::drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, c
 		}
 	}
 }
-void AnimatedModel::drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt)
+void AnimatedModel::drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes, AnimationInstance* instance, float dt, AnimationStateMachine* fpsSM)
 {
 	//instance->update("walk", dt);
 	//std::vector<std::string> names;
@@ -739,5 +740,70 @@ void AnimatedModel::drawSingle(Core* core, PSOManager* const psos, std::string p
 	//	}
 	//}
 
-	draw(core, psos, pipeName, pipes, instance, "17 reload", dt, 1);
+	//draw(core, psos, pipeName, pipes, instance, "17 reload", dt, 1);
+	// 从状态机获取当前应该播放的动画名（核心：替代硬编码）
+	std::string currentAnimName = "";
+	if (fpsSM != nullptr && fpsSM->GetCurrentState() != nullptr)
+	{
+		// 状态名与动画名映射（比如："Idle" → "04 idle"，"Walk" → "06 walk"等）
+		std::map<std::string, std::string> stateToAnim = {
+			{"Idle", "04 idle"},
+			{"Walk", "06 walk"},
+			{"Reload", "17 reload"},
+			{"Fire", "08 fire"}
+		};
+		std::string stateName = fpsSM->GetCurrentState()->GetStateName();
+		if (stateToAnim.find(stateName) != stateToAnim.end())
+		{
+			currentAnimName = stateToAnim[stateName];
+		}
+		else
+		{
+			// 默认动画：取第一个动画
+			currentAnimName = instance->animation->getAllAnimationNames()[0];
+		}
+	}
+	else
+	{
+		// 无状态机时，默认用idle
+		currentAnimName = "04 idle";
+	}
+	//currentAnimName = "06 walk";
+	// 调用draw方法，传入动态获取的动画名
+	draw(core, psos, pipeName, pipes, instance, currentAnimName, dt, 1);
 }
+
+//void AnimatedModel::drawSingle(Core* core, PSOManager* const psos, std::string pipeName, Pipelines* const pipes,
+//	AnimationInstance* instance, FPSAnimationStateMachine* fpsSM, float dt)
+//{
+//	// 从状态机获取当前应该播放的动画名（核心：替代硬编码）
+//	std::string currentAnimName = "";
+//	if (fpsSM != nullptr && fpsSM->GetCurrentState() != nullptr)
+//	{
+//		// 状态名与动画名映射（比如："Idle" → "04 idle"，"Walk" → "06 walk"等）
+//		std::map<std::string, std::string> stateToAnim = {
+//			{"Idle", "04 idle"},
+//			{"Walk", "06 walk"},
+//			{"Reload", "17 reload"},
+//			{"Fire", "08 fire"}
+//		};
+//		std::string stateName = fpsSM->GetCurrentState()->GetStateName();
+//		if (stateToAnim.find(stateName) != stateToAnim.end())
+//		{
+//			currentAnimName = stateToAnim[stateName];
+//		}
+//		else
+//		{
+//			// 默认动画：取第一个动画
+//			currentAnimName = instance->animation->getAllAnimationNames()[0];
+//		}
+//	}
+//	else
+//	{
+//		// 无状态机时，默认用idle
+//		currentAnimName = "04 idle";
+//	}
+//
+//	// 调用draw方法，传入动态获取的动画名
+//	draw(core, psos, pipeName, pipes, instance, currentAnimName, dt, 1);
+//}
