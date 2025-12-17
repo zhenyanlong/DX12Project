@@ -30,26 +30,40 @@ TreeActor::TreeActor(int count)
 void TreeActor::generateInstanceMatrices(int count, float radius, float height)
 {
 	instanceMatrices.clear();
+	//for (int i = 0; i < count; i++)
+	//{
+	//	// 随机极坐标位置
+	//	float angle = (float)rand() / RAND_MAX * 2 * M_PI;
+	//	float r = (float)rand() / RAND_MAX * radius;
+	//	float x = r * cos(angle);
+	//	float z = r * sin(angle);
+	//	float y = (float)rand() / RAND_MAX * height;
+
+	//	// 随机缩放（0.8~1.2倍）
+	//	float scale = 0.01f;
+
+	//	// 随机旋转（Y轴）
+	//	float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
+
+	//	// 构建实例的世界矩阵：缩放 -> 旋转 -> 平移
+	//	Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
+	//	Matrix rotMat = Matrix::rotateZ(0.f)*Matrix::rotateY(rotY)* Matrix::rotateX(0.f);
+	//	Matrix transMat = Matrix::translation(Vec3(x, y, z));
+	//	Matrix instanceMat = scaleMat* rotMat * transMat;
+
+	//	instanceMatrices.push_back(instanceMat);
+	//}
 	for (int i = 0; i < count; i++)
 	{
-		// 随机极坐标位置
-		float angle = (float)rand() / RAND_MAX * 2 * M_PI;
-		float r = (float)rand() / RAND_MAX * radius;
-		float x = r * cos(angle);
-		float z = r * sin(angle);
-		float y = (float)rand() / RAND_MAX * height;
-
-		// 随机缩放（0.8~1.2倍）
-		float scale = 0.01f;
-
-		// 随机旋转（Y轴）
+		float scale = 0.05f;
 		float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
+		float transIncrement = 20.f;
+		Vec3 originPos = willow->GetWorldPos();
 
-		// 构建实例的世界矩阵：缩放 -> 旋转 -> 平移
 		Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
-		Matrix rotMat = Matrix::rotateZ(0.f)*Matrix::rotateY(rotY)* Matrix::rotateX(0.f);
-		Matrix transMat = Matrix::translation(Vec3(x, y, z));
-		Matrix instanceMat = scaleMat* rotMat * transMat;
+		Matrix rotMat = Matrix::rotateZ(0.f) * Matrix::rotateY(rotY) * Matrix::rotateX(0.f);
+		Matrix transMat = Matrix::translation(Vec3(originPos.x, originPos.y, originPos.z + i * transIncrement));
+		Matrix instanceMat = scaleMat * rotMat * transMat;
 
 		instanceMatrices.push_back(instanceMat);
 	}
@@ -67,7 +81,7 @@ WaterActor::WaterActor()
 {
 	World* myWorld = World::Get();
 	water = new StaticMesh();
-	water->CreateFromPlane(myWorld->GetCore(),10000,1000,1000);
+	water->CreateFromPlane(myWorld->GetCore(),100000, 100000,2000,2000);
 }
 
 void WaterActor::draw()
@@ -207,7 +221,7 @@ GroundActor::GroundActor()
 {
 	World* myWorld = World::Get();
 	ground = new StaticMesh();
-	ground->CreateFromPlane(myWorld->GetCore(), 10000, 1000, 1000);
+	ground->CreateFromPlane(myWorld->GetCore(), 10000, 20000, 10, 10);
 	setCollidable(true);
 	setCollisionShapeType(CollisionShapeType::AABB);
 	calculateLocalCollisionShape();
@@ -231,6 +245,180 @@ void GroundActor::calculateLocalCollisionShape()
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : ground->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+ContainerBlueActor::ContainerBlueActor()
+{
+	World* myWorld = World::Get();
+	container = new StaticMesh(myWorld->GetCore(), "Models/container_005.gem");
+	//container->setWorldRotation(Vec3(0.f, PI / 2, 0.f));
+	container->SetWorldRotationRadian(Vec3(0.f, PI / 2, 0.f));
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::AABB);
+	calculateLocalCollisionShape();
+}
+
+void ContainerBlueActor::draw()
+{
+	World* myWorld = World::Get();
+
+	container->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+}
+
+void ContainerBlueActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!container)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto mesh : container->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+BlockActor::BlockActor()
+{
+	World* myWorld = World::Get();
+	box = new StaticMesh(myWorld->GetCore(), "Models/box_024.gem");
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::AABB);
+	box->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
+	calculateLocalCollisionShape();
+}
+
+void BlockActor::draw()
+{
+	World* myWorld = World::Get();
+
+	//box->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+}
+
+void BlockActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!box)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto mesh : box->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+ObstacleActor::ObstacleActor(int count)
+{
+	World* myWorld = World::Get();
+	obstacle = new StaticMesh(myWorld->GetCore(), "Models/obstacle_003.gem");
+	//setCollidable(true);
+	//setCollisionShapeType(CollisionShapeType::AABB);
+	obstacle->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
+	//calculateLocalCollisionShape();
+	generateInstanceMatrices(count, Vec3(0.f, 0.f, 5.f));
+	
+}
+
+void ObstacleActor::generateInstanceMatrices(int count, Vec3 offset)
+{
+	instanceCount = count;
+	instanceMatrices.clear();
+	
+	for (int i = 0; i < count; i++)
+	{
+		Vec3 scale = obstacle->GetWorldScale();
+		Vec3 rot = obstacle->GetWorldRotationRadian();
+		//float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
+		float transIncrement = 20.f;
+		Vec3 originPos = obstacle->GetWorldPos();
+
+		Matrix scaleMat = Matrix::scaling(Vec3(scale.x, scale.y, scale.z));
+		Matrix rotMat = Matrix::rotateZ(rot.z) * Matrix::rotateY(rot.y) * Matrix::rotateX(rot.x);
+		Matrix transMat = Matrix::translation(Vec3(originPos.x + i * offset.x, originPos.y + i * offset.y, originPos.z + i * offset.z));
+		Matrix instanceMat = scaleMat * rotMat * transMat;
+
+		instanceMatrices.push_back(instanceMat);
+	}
+}
+
+void ObstacleActor::draw()
+{	
+	World* myWorld = World::Get();
+
+	obstacle->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
+}
+
+void ObstacleActor::calculateLocalCollisionShape()
+{
+}
+
+GeneralMeshActor::GeneralMeshActor(std::string path)
+{
+	World* myWorld = World::Get();
+	mesh = new StaticMesh(myWorld->GetCore(), path);
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::AABB);
+	mesh->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
+	calculateLocalCollisionShape();
+}
+
+void GeneralMeshActor::draw()
+{
+	World* myWorld = World::Get();
+	mesh->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+}
+
+void GeneralMeshActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!mesh)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto mesh : mesh->meshes)
 	{
 		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
 		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>

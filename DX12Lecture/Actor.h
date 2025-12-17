@@ -107,9 +107,10 @@ class TreeActor : public Actor
 	StaticMesh* willow;
 	std::vector<Matrix> instanceMatrices; // 存储每个实例的世界矩阵
 	int instanceCount; // 实例数量
+public:
 	// 生成随机位置的实例矩阵
 	void generateInstanceMatrices(int count, float radius, float height);
-public:
+
 	TreeActor(int count = 50);
 	virtual void draw() override;
 
@@ -240,5 +241,106 @@ public:
 
 	virtual Vec3 getWorldRotation() const override { return ground->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { ground->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+};
+
+class ContainerBlueActor : public Actor
+{
+	StaticMesh* container;
+public:
+	ContainerBlueActor();
+	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return container->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return container->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { container->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return container->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { container->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return container->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { container->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+};
+
+class BlockActor :public Actor
+{
+	StaticMesh* box;
+public:
+	BlockActor();
+	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return box->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return box->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { box->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return box->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { box->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return box->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { box->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+};
+
+class ObstacleActor	:public Actor
+{
+	StaticMesh* obstacle;
+	std::vector<Matrix> instanceMatrices; // 存储每个实例的世界矩阵
+	int instanceCount; // 实例数量
+public:
+	ObstacleActor(int count = 5);
+
+	void generateInstanceMatrices(int count, Vec3 offset);
+
+	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return obstacle->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return obstacle->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { obstacle->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return obstacle->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { obstacle->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return obstacle->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { obstacle->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+};
+
+class GeneralMeshActor :public Actor
+{
+	StaticMesh* mesh;
+public:
+	GeneralMeshActor(std::string path = "Models/container_005.gem");
+
+	virtual void draw() override;
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return mesh->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return mesh->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { mesh->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return mesh->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { mesh->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return mesh->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { mesh->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 };

@@ -352,7 +352,7 @@ StaticMesh::StaticMesh()
 {
 }
 
-void StaticMesh::CreateFromPlane(Core* core, float size, int xSegments, int zSegments, std::string texName)
+void StaticMesh::CreateFromPlane(Core* core, float sizeX, float sizeZ, int xSegments, int zSegments, std::string texName)
 {
 	std::vector<STATIC_VERTEX> vertices;
 	std::vector<unsigned int> indices;
@@ -364,8 +364,8 @@ void StaticMesh::CreateFromPlane(Core* core, float size, int xSegments, int zSeg
 		{
 			float u = (float)x / xSegments;
 			float v = (float)z / zSegments;
-			float posX = (u - 0.5f) * size;
-			float posZ = (v - 0.5f) * size;
+			float posX = (u - 0.5f) * sizeX;
+			float posZ = (v - 0.5f) * sizeZ;
 			float posY = 0.0f;
 
 			//STATIC_VERTEX vert;

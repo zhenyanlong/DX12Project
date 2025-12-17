@@ -26,6 +26,7 @@ void FPSWalkState::OnUpdate(float dt) {
 // Reload状态进入：标记换弹中
 void FPSReloadState::OnEnter() {
 	auto fpsSM = dynamic_cast<FPSAnimationStateMachine*>(GetStateMachine());
+	fpsSM->m_animInstance->resetAnimationTime();
 	if (fpsSM) {
 		fpsSM->m_isReloading = true;
 	}
@@ -47,6 +48,7 @@ void FPSReloadState::OnUpdate(float dt) {
 // Fire状态进入：标记射击中
 void FPSFireState::OnEnter() {
 	auto fpsSM = dynamic_cast<FPSAnimationStateMachine*>(GetStateMachine());
+	fpsSM->m_animInstance->resetAnimationTime();
 	if (fpsSM) {
 		fpsSM->m_isFiring = true;
 	}
