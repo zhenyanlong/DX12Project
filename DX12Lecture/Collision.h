@@ -279,5 +279,5 @@ public:
 		const std::vector<Actor*>& collidableActors,
 		float epsilon = 0.001f
 	);
-	
+	static std::vector<Actor*> CheckCollision(Actor* const controlledActor, const std::vector<Actor*>& collidableActors);
 };

@@ -134,10 +134,12 @@ public:
 	// 新增：添加Actor到世界
 	void addActor(std::string name, Actor* actor)
 	{
-		GetLevel()->AddActor(name, actor);
+		SingleInstance->GetLevel()->AddActor(name, actor);
 		//actor->BeginPlay();
 	}
-
+	void garbageCollection() {
+		SingleInstance->GetLevel()->garbageColloection();
+	}
 	// 新增：获取所有可碰撞Actor
 	std::vector<Actor*> getCollidableActors() const
 	{
@@ -168,12 +170,12 @@ public:
 	// execute begin play, tick, and draw
 	void ExecuteBeginPlays()
 	{
-
+		m_currentLevel->BeginPlayInLevel();
 	}
 
 	void ExecuteTicks()
 	{
-
+		m_currentLevel->TickInLevel(dt);
 	}
 
 	void ExecuteDraw()

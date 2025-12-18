@@ -99,6 +99,7 @@ FPSActor::FPSActor()
 	setCollisionShapeType(CollisionShapeType::Sphere);
 	animatedInstance = new AnimationInstance();
 	animatedInstance->init(&fps_Mesh->animation, 0);
+	m_actorType = ActorType::Player;
 	calculateLocalCollisionShape();
 
 	// 新增：初始化动画状态机
@@ -419,6 +420,92 @@ void GeneralMeshActor::calculateLocalCollisionShape()
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : mesh->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+void BulletActor::OnTick(float dt)
+{
+	World* myWorld = World::Get();
+	// 1. 更新生命周期，超时销毁
+	m_lifeTime += dt;
+	if (m_lifeTime >= MAX_LIFE_TIME) {
+		Destroy();
+		return;
+	}
+
+	// 2. 移动子弹
+	setWorldPos(getWorldPos() + m_direction * m_speed * dt);
+
+	calculateLocalCollisionShape();
+	auto collidableActors = myWorld->getCollidableActors();
+	std::vector<Actor*> collisions = CollisionResolver::CheckCollision(this, collidableActors);
+
+	for (auto* actor : collisions)
+	{
+		if (actor->getActorType() == ActorType::Static)
+		{
+			Destroy();
+		}
+		else if (actor->getActorType() == ActorType::Enemy)
+		{
+			// execute damage api
+
+		}
+	}
+}
+
+BulletActor::BulletActor(const Vec3 pos, const Vec3 dir, float speed, int damage)
+{
+	World* myWorld = World::Get();
+	m_bulletMesh = new StaticMesh();
+	m_bulletMesh->CreateFromSphere(myWorld->GetCore(), 64, 64, 10, "Models/Textures/arms_1_Albedo_nh.png");
+	// init mesh 
+	setWorldPos(pos);
+	//setWorldScale(Vec3(1.f, 1.f, 1.f));
+	m_direction = dir.normalize();
+	m_speed = speed;
+	m_damage = damage;
+	m_lifeTime = 0.0f;
+	m_actorType = ActorType::Bullet;
+
+	
+	
+	
+
+	// init collision
+	//setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::Sphere);
+	calculateLocalCollisionShape();
+}
+
+void BulletActor::draw()
+{
+	World* myWorld = World::Get();
+	m_bulletMesh->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+}
+
+void BulletActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!m_bulletMesh)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto mesh : m_bulletMesh->meshes)
 	{
 		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
 		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>

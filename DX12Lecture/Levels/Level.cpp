@@ -22,9 +22,9 @@ TestMap::TestMap()
 	Actor* fpsActor = new FPSActor();
 	m_actors["FPSActor"] = fpsActor;
 
-	Actor* boxActor = new BoxActor();
+	/*Actor* boxActor = new BoxActor();
 	boxActor->setWorldScale(Vec3(0.02f, 0.02f, 0.02f));
-	m_actors["BoxActor"] = boxActor;
+	m_actors["BoxActor"] = boxActor;*/
 
 	Actor* boxActor1 = new BoxActor();
 	boxActor1->setWorldPos(Vec3(0.f, 20.f, 0.f));

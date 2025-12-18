@@ -83,20 +83,6 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	CameraControllable* mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
 
 	ScreenSpaceTriangle tri;
-	// init mesh
-	//Mesh mesh;
-	//Mesh::CreatePlane(&core, &mesh);
-	//Mesh::CreateCube(&core, &mesh);
-	//Mesh::CreateSphere(&core, &mesh, 16, 24, 5);
-	//StaticMesh staticMesh(&core, "Models/acacia_003.gem");
-	//AnimatedModel animMesh(&core, "Models/TRex.gem");
-	/*StaticMesh SkySphere;
-	SkySphere.CreateFromSphere(&core, 16, 24, 5, "Models/Textures/sky.png");
-	SkySphere.SetWorldScaling(Vec3(1000.f, 1000.f, 1000.f));
-	SkySphere.SetWorldRotationRadian(Vec3(M_PI, 0.f, 0.f));*/
-	//std::vector<Mesh> meshes;
-	//Mesh::CreateGEM(&core, staticMesh.meshes, "Resources/acacia_003.gem");
-	//init general matrix
 	
 
 	Pipeline pipe;
@@ -134,7 +120,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	// ===== 新增：重力与落地状态变量 =====
 	float verticalVelocity = 0.0f; // 垂直速度（Y轴，向上为正）
-	bool isGrounded = true;       // 是否落地（站在地面上）
+	bool isGrounded = false;       // 是否落地（站在地面上）
 	bool firstframe = true;
 
 	
@@ -155,13 +141,29 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	{
 		mainCameraController->updatePos(Vec3(40.0f, 15.0f, 0.0f));
 	}
+	
+	
 	while (true)
 	{
 		//Process messages 
 		win.processMessages();
+
 		// update time
 		myWorld->UpdateTime();
 		float dt = myWorld->GetDeltatime();
+
+		// garbage Collection 
+		if (!firstframe)
+		{
+			myWorld->garbageCollection();
+		}
+		static bool testspawn = true;
+		if (myWorld->GetLevel() != nullptr && testspawn)
+		{
+			Actor* bullet = new BulletActor(Vec3(0.f, 0.f, 0.f), Vec3(0.f, 1.f, 0.f), 0.f);
+			myWorld->addActor("bullet", bullet);
+			testspawn = false;
+		}
 		// Process mouse control
 		GetWindowRect(win.hwnd, &windowRect);
 		windowCenter.x = windowRect.left + WIDTH / 2;
@@ -184,14 +186,11 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			win.keyJustPressed[VK_ESCAPE] = false; // 防止连续触发
 		}
 
-		core.beginFrame();
+		//
 
-		core.getCommandList()->SetGraphicsRootSignature(core.rootSignature);
-		core.getCommandList()->SetDescriptorHeaps(1, &core.srvHeap.heap);
-
-		
+		Vec3 cameraForward;
 		// begin play
-		
+		myWorld->ExecuteBeginPlays();
 		// ===================== 1. 鼠标控制视角（FPS核心） =====================
 		if (mouseLocked ) // 窗口激活时才响应
 		{
@@ -213,7 +212,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			cameraPitch = clamp(cameraPitch, (float) - M_PI / 2 + 0.01f, (float)M_PI / 2 - 0.01f);
 
 			// 根据欧拉角计算相机朝向（FPS中相机上方向固定为世界Y轴）
-			Vec3 cameraForward;
+			
 			Vec3 moveForward;
 			cameraForward.x = cos(cameraYaw) * cos(cameraPitch);
 			cameraForward.y = sin(cameraPitch);
@@ -255,8 +254,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			// 1. 重力：仅当不在地面时，垂直速度叠加重力加速度（向下为负）
 				//if (!isGrounded)
 				//{
-				if (!firstframe)
+				if (!firstframe&&!isGrounded)
 				{
+					
 					verticalVelocity -= GRAVITY * dt; // Y轴向上，重力向下，所以减
 					
 				}
@@ -315,6 +315,75 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 					mainActor->setWorldPos(Vec3(currentPos.x, currentPos.y, currentPos.z));
 				}
 				// 可选：处理撞到天花板（垂直移动向上，被阻挡）
+				//Vec3 currentPos = mainActor->getWorldPos();
+				//Vec3 newPos = currentPos + resolvedMove;
+				//mainActor->setWorldPos(newPos); // 无论是否落地，都应用移动
+
+				//// 落地检测：判断是否有地面支撑
+				//float verticalDesired = gravityMove.y; // 期望的垂直移动（向下为负）
+				//float verticalResolved = resolvedMove.y; // 实际的垂直移动
+				//isGrounded = false; // 每帧先重置为false
+
+				//// 条件1：垂直期望移动向下，且实际移动被阻挡（传统落地检测）
+				//bool isBlockedByGround = (verticalDesired < -GROUND_THRESHOLD) && (abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD);
+				//// 条件2：新增射线检测（向下发射短射线，检测是否有地面，解决滑下时的落地检测）
+				//bool isRayHitGround = false;
+				//if (mainActor)
+				//{
+				//	// 从Actor位置向下发射射线（长度：GROUND_THRESHOLD * 2，比如0.02f）
+				//	Vec3 rayOrigin = mainActor->getWorldPos() + Vec3(0, GROUND_THRESHOLD, 0); // 稍微上移，避免穿透
+				//	Vec3 rayDir = Vec3(0, -10, 0); // 向下
+				//	Ray groundRay(rayOrigin, rayDir);
+				//	float t; // 射线碰撞距离
+				//	AABB actorAABB = mainActor->getWorldAABB();
+
+				//	// 遍历可碰撞Actor，检测射线是否击中地面（Static类型）
+				//	for (auto* collActor : myWorld->getCollidableActors())
+				//	{
+				//		if (!collActor || collActor == mainActor || collActor->getActorType() != ActorType::Static)
+				//			continue;
+
+				//		if (collActor->getCollisionShapeType() == CollisionShapeType::AABB)
+				//		{
+				//			CollisionResult rayResult = CollisionDetector::checkRayAABB(groundRay, collActor->getWorldAABB(), t);
+				//			if (rayResult.isColliding && t <= (GROUND_THRESHOLD * 2))
+				//			{
+				//				isRayHitGround = true;
+				//				isGrounded = true;
+				//				break;
+				//			}
+				//		}
+				//		else if (collActor->getCollisionShapeType() == CollisionShapeType::Sphere)
+				//		{
+				//			CollisionResult rayResult = CollisionDetector::checkRaySphere(groundRay, collActor->getWorldSphere(), t);
+				//			if (rayResult.isColliding && t <= (GROUND_THRESHOLD * 2))
+				//			{
+				//				isRayHitGround = true;
+				//				isGrounded = true;
+				//				break;
+				//			}
+				//		}
+				//	}
+				//}
+
+				//// 两个条件满足其一，即为落地
+				//if (isBlockedByGround || isRayHitGround)
+				//{
+				//	isGrounded = true;
+				//	verticalVelocity = 0.0f; // 重置垂直速度，停止下落
+
+				//	// 地面吸附：将Actor位置对齐到地面（避免微小悬浮）
+				//	if (isRayHitGround)
+				//	{
+				//		Vec3 pos = mainActor->getWorldPos();
+				//		mainActor->setWorldPos(Vec3(pos.x, pos.y, pos.z));
+				//	}
+				//	else
+				//	{
+				//		Vec3 pos = mainActor->getWorldPos();
+				//		mainActor->setWorldPos(Vec3(pos.x, pos.y, pos.z));
+				//	}
+				//}
 				else if (verticalDesired > GROUND_THRESHOLD && abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD)
 				{
 					verticalVelocity = 0.0f; // 重置垂直速度，停止上升
@@ -378,15 +447,39 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				//win.keyJustPressed['R'] = false;
 			}
 			// 检测射击（鼠标左键）
-			if (win.keys[VK_LBUTTON] && win.keyJustPressed[VK_LBUTTON]) {
+			static bool testbool = true;
+			static float gaptime = 0.2f;
+			if (win.mouseButtons[0]) {
 				fpsAnimation->TriggerFire();
+				if (testbool)
+				{
+					myWorld->addActor("bullet1", new BulletActor(fpsActor->getWorldPos()+ cameraForward*2.f, cameraForward, 100.f));
+					testbool = false;
+				}
+				
+				
 				//win.keyJustPressed[VK_LBUTTON] = false;
+			}
+			
+			if (!testbool)
+			{
+				gaptime -= myWorld->GetDeltatime();
+				if (gaptime<=0.f)
+				{
+					testbool = true;
+					gaptime = 0.2f;
+				}
 			}
 		}
 
-		fpsActor->Tick(myWorld->GetDeltatime());
-
+		//fpsActor->Tick(myWorld->GetDeltatime());
+		myWorld->ExecuteTicks();
 		// draw
+		core.beginFrame();
+
+		core.getCommandList()->SetGraphicsRootSignature(core.rootSignature);
+		core.getCommandList()->SetDescriptorHeaps(1, &core.srvHeap.heap);
+
 		myWorld->ExecuteDraw();
 		//SkySphere.draw(&core, myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 		

@@ -4,16 +4,29 @@
 #include "ICameraControllable.h"
 #include "Collision.h"
 #include "Animation/FPSAnimationStateMachine.h"
+
+enum class ActorType {
+	None,
+	Player,        // 玩家
+	Bullet,     // 子弹
+	Enemy,      // 敌人
+	Static      // 静态场景物体（如墙壁）
+};
 class Actor	: public GeneralEvent
 {
+	
 	// collision system
 protected:
 	CollisionShapeType m_collisionShapeType = CollisionShapeType::None;
 	AABB m_localAABB;       // 局部空间AABB（相对于Actor原点）
 	Sphere m_localSphere;   // 局部空间Sphere（相对于Actor原点）
 	bool m_isCollidable = false; // 是否可碰撞
-
+	// Actor类型（用于碰撞区分）
+	ActorType m_actorType;
+	// 是否标记为销毁（World统一清理）
+	bool m_isDestroyed;
 public:
+	Actor() : m_actorType(ActorType::Static), m_isDestroyed(false) {};
 	virtual ~Actor() = default;
 	//virtual void draw() = 0;
 
@@ -22,6 +35,8 @@ public:
 	bool isCollidable() const { return m_isCollidable; }
 	void setCollisionShapeType(CollisionShapeType type) { m_collisionShapeType = type; }
 	CollisionShapeType getCollisionShapeType() const { return m_collisionShapeType; }
+	ActorType getActorType() const { return m_actorType; }
+	bool getIsDestroyed() const { return m_isDestroyed; }
 
 	// 获取局部碰撞体
 	const AABB& getLocalAABB() const { return m_localAABB; }
@@ -343,4 +358,40 @@ public:
 	virtual Vec3 getWorldRotation() const override { return mesh->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { mesh->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+};
+
+class BulletActor : public Actor
+{
+private:
+	Vec3 m_direction; // 发射方向
+	float m_speed;    // 移动速度
+	int m_damage;     // 伤害值
+	float m_lifeTime; // 生命周期（防止子弹一直存在，单位：秒）
+	const float MAX_LIFE_TIME = 3.0f; // 最大生命周期
+
+	StaticMesh* m_bulletMesh;
+protected:
+	virtual void OnTick(float dt) override;
+public:
+	BulletActor(const Vec3 pos, const Vec3 dir, float speed = 100.0f, int damage = 10);
+	~BulletActor() override = default;
+
+	virtual void draw() override;
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return m_bulletMesh->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return m_bulletMesh->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { m_bulletMesh->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return m_bulletMesh->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { m_bulletMesh->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return m_bulletMesh->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { m_bulletMesh->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+
+	void Destroy() { m_isDestroyed = true; }
 };
