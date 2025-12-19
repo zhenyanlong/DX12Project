@@ -3,6 +3,82 @@
 #include "Animation/FPSAnimationStateMachine.h"
 #include "Animation/EnemyAnimationStateMachine.h"
 #define M_PI       3.14159265358979323846
+
+std::map<std::string, Actor::ActorCreator> Actor::m_actorCreators;
+
+void Actor::RegisterActor(const std::string& className, ActorCreator creator) {
+	m_actorCreators[className] = creator;
+}
+
+Actor* Actor::CreateActorByClassName(const std::string& className) {
+	auto it = m_actorCreators.find(className);
+	if (it != m_actorCreators.end()) {
+		return it->second();
+	}
+	return nullptr;
+}
+
+// 基类公共数据序列化
+void Actor::SaveBase(std::ofstream& file) const {
+	// 保存ActorType（转为int）
+	int actorType = static_cast<int>(m_actorType);
+	file.write(reinterpret_cast<const char*>(&actorType), sizeof(int));
+
+	// 保存位置、旋转、缩放
+	Vec3 pos = getWorldPos();
+	file.write(reinterpret_cast<const char*>(&pos), sizeof(Vec3));
+	Vec3 rot = getWorldRotation();
+	file.write(reinterpret_cast<const char*>(&rot), sizeof(Vec3));
+	Vec3 scale = getWorldScale();
+	file.write(reinterpret_cast<const char*>(&scale), sizeof(Vec3));
+
+	// 保存碰撞相关
+	bool isCollidable = m_isCollidable;
+	file.write(reinterpret_cast<const char*>(&isCollidable), sizeof(bool));
+	int collisionShapeType = static_cast<int>(m_collisionShapeType);
+	file.write(reinterpret_cast<const char*>(&collisionShapeType), sizeof(int));
+
+	// 保存销毁状态
+	bool isDestroyed = m_isDestroyed;
+	file.write(reinterpret_cast<const char*>(&isDestroyed), sizeof(bool));
+}
+
+void Actor::LoadBase(std::ifstream& file) {
+	// 加载ActorType
+	int actorType;
+	file.read(reinterpret_cast<char*>(&actorType), sizeof(int));
+	m_actorType = static_cast<ActorType>(actorType);
+
+	// 加载位置、旋转、缩放
+	Vec3 pos, rot, scale;
+	file.read(reinterpret_cast<char*>(&pos), sizeof(Vec3));
+	setWorldPos(pos);
+	file.read(reinterpret_cast<char*>(&rot), sizeof(Vec3));
+	setWorldRotation(rot);
+	file.read(reinterpret_cast<char*>(&scale), sizeof(Vec3));
+	setWorldScale(scale);
+
+	// 加载碰撞相关
+	bool isCollidable;
+	file.read(reinterpret_cast<char*>(&isCollidable), sizeof(bool));
+	m_isCollidable = isCollidable;
+	int collisionShapeType;
+	file.read(reinterpret_cast<char*>(&collisionShapeType), sizeof(int));
+	m_collisionShapeType = static_cast<CollisionShapeType>(collisionShapeType);
+
+	// 加载销毁状态
+	bool isDestroyed;
+	file.read(reinterpret_cast<char*>(&isDestroyed), sizeof(bool));
+	m_isDestroyed = isDestroyed;
+}
+namespace {
+	struct SkyBoxActorRegistrar {
+		SkyBoxActorRegistrar() {
+			Actor::RegisterActor("SkyBoxActor", []() { return new SkyBoxActor(); });
+		}
+	} skyBoxActorRegistrar;
+}
+
 SkyBoxActor::SkyBoxActor()
 {
 	World* myWorld = World::Get();
@@ -18,52 +94,48 @@ void SkyBoxActor::draw()
 	skybox->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 }
 
-TreeActor::TreeActor(int count)
+namespace {
+	struct TreeActorRegistrar {
+		TreeActorRegistrar() {
+			Actor::RegisterActor("TreeActor", []() { return new TreeActor(); });
+		}
+	} treeActorRegistrar;
+}
+//TreeActor::TreeActor()
+//{
+//	m_instanceCount = 0;
+//	m_transIncrement = Vec3(0.f,0.f,0.f);
+//	World* myWorld = World::Get();
+//	willow = new StaticMesh(myWorld->GetCore(), "Models/willow.gem");
+//}
+TreeActor::TreeActor(int count, Vec3 transIncrement)
 {
-	instanceCount = count;
+	m_instanceCount = count;
+	m_transIncrement = transIncrement;
+
 	World* myWorld = World::Get();
 	willow = new StaticMesh(myWorld->GetCore(), "Models/willow.gem");
 	//willow->SetWorldScaling(Vec3(1.f, 1.f, 1.f));
 	// 生成50个实例的矩阵（分布在半径50的圆内，高度0~5）
-	generateInstanceMatrices(instanceCount, 50.0f, 5.0f);
+	generateInstanceMatrices(m_instanceCount, m_transIncrement);
 }
 
-void TreeActor::generateInstanceMatrices(int count, float radius, float height)
+void TreeActor::generateInstanceMatrices(int count, Vec3 transIncrement)
 {
 	instanceMatrices.clear();
-	//for (int i = 0; i < count; i++)
-	//{
-	//	// 随机极坐标位置
-	//	float angle = (float)rand() / RAND_MAX * 2 * M_PI;
-	//	float r = (float)rand() / RAND_MAX * radius;
-	//	float x = r * cos(angle);
-	//	float z = r * sin(angle);
-	//	float y = (float)rand() / RAND_MAX * height;
-
-	//	// 随机缩放（0.8~1.2倍）
-	//	float scale = 0.01f;
-
-	//	// 随机旋转（Y轴）
-	//	float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
-
-	//	// 构建实例的世界矩阵：缩放 -> 旋转 -> 平移
-	//	Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
-	//	Matrix rotMat = Matrix::rotateZ(0.f)*Matrix::rotateY(rotY)* Matrix::rotateX(0.f);
-	//	Matrix transMat = Matrix::translation(Vec3(x, y, z));
-	//	Matrix instanceMat = scaleMat* rotMat * transMat;
-
-	//	instanceMatrices.push_back(instanceMat);
-	//}
-	for (int i = 0; i < count; i++)
+	
+	m_instanceCount = count;
+	m_transIncrement = transIncrement;
+	for (int i = 0; i < m_instanceCount; i++)
 	{
 		float scale = 0.05f;
 		float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
-		float transIncrement = 20.f;
+		//float transIncrement = 20.f;
 		Vec3 originPos = willow->GetWorldPos();
 
 		Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
 		Matrix rotMat = Matrix::rotateZ(0.f) * Matrix::rotateY(rotY) * Matrix::rotateX(0.f);
-		Matrix transMat = Matrix::translation(Vec3(originPos.x, originPos.y, originPos.z + i * transIncrement));
+		Matrix transMat = Matrix::translation(Vec3(originPos.x + i * transIncrement.x, originPos.y + i * transIncrement.y, originPos.z + i * transIncrement.z));
 		Matrix instanceMat = scaleMat * rotMat * transMat;
 
 		instanceMatrices.push_back(instanceMat);
@@ -75,7 +147,15 @@ void TreeActor::draw()
 	World* myWorld = World::Get();
 	
 	//willow->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
-	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
+	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, m_instanceCount);
+}
+
+namespace {
+	struct WaterActorRegistrar {
+		WaterActorRegistrar() {
+			Actor::RegisterActor("WaterActor", []() { return new WaterActor(); });
+		}
+	} waterActorRegistrar;
 }
 
 WaterActor::WaterActor()
@@ -89,6 +169,14 @@ void WaterActor::draw()
 {
 	World* myWorld = World::Get();
 	water->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_LIGHT_WATER_PIPE, myWorld->GetPipelines());
+}
+
+namespace {
+	struct FPSActorRegistrar {
+		FPSActorRegistrar() {
+			Actor::RegisterActor("FPSActor", []() { return new FPSActor(); });
+		}
+	} fpsActorRegistrar;
 }
 
 FPSActor::FPSActor()
@@ -177,6 +265,14 @@ void FPSActor::OnTick(float dt)
 	}
 }
 
+namespace {
+	struct BoxActorRegistrar {
+		BoxActorRegistrar() {
+			Actor::RegisterActor("BoxActor", []() { return new BoxActor(); });
+		}
+	} boxActorRegistrar;
+}
+
 BoxActor::BoxActor()
 {
 	World* myWorld = World::Get();
@@ -219,6 +315,14 @@ void BoxActor::calculateLocalCollisionShape()
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
+namespace {
+	struct GroundActorRegistrar {
+		GroundActorRegistrar() {
+			Actor::RegisterActor("GroundActor", []() { return new GroundActor(); });
+		}
+	} groundActorRegistrar;
+}
+
 GroundActor::GroundActor()
 {
 	World* myWorld = World::Get();
@@ -259,6 +363,14 @@ void GroundActor::calculateLocalCollisionShape()
 
 	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+namespace {
+	struct ContainerBlueActorRegistrar {
+		ContainerBlueActorRegistrar() {
+			Actor::RegisterActor("ContainerBlueActor", []() { return new ContainerBlueActor(); });
+		}
+	} containerBlueActorRegistrar;
 }
 
 ContainerBlueActor::ContainerBlueActor()
@@ -304,6 +416,14 @@ void ContainerBlueActor::calculateLocalCollisionShape()
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
+namespace {
+	struct BlockActorRegistrar {
+		BlockActorRegistrar() {
+			Actor::RegisterActor("BlockActor", []() { return new BlockActor(); });
+		}
+	} blockActorRegistrar;
+}
+
 BlockActor::BlockActor()
 {
 	World* myWorld = World::Get();
@@ -347,8 +467,19 @@ void BlockActor::calculateLocalCollisionShape()
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
-ObstacleActor::ObstacleActor(int count)
+namespace {
+	struct ObstacleActorRegistrar {
+		ObstacleActorRegistrar() {
+			Actor::RegisterActor("ObstacleActor", []() { return new ObstacleActor(); });
+		}
+	} obstacleActorRegistrar;
+}
+
+ObstacleActor::ObstacleActor(int count, Vec3 offset)
 {
+	m_instanceCount = count;
+	m_offset = offset;
+
 	World* myWorld = World::Get();
 	obstacle = new StaticMesh(myWorld->GetCore(), "Models/obstacle_003.gem");
 	//setCollidable(true);
@@ -356,13 +487,14 @@ ObstacleActor::ObstacleActor(int count)
 	obstacle->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
 	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
 	//calculateLocalCollisionShape();
-	generateInstanceMatrices(count, Vec3(0.f, 0.f, 5.f));
+	generateInstanceMatrices(m_instanceCount, m_offset);
 	
 }
 
 void ObstacleActor::generateInstanceMatrices(int count, Vec3 offset)
 {
-	instanceCount = count;
+	m_instanceCount = count;
+	m_offset = offset;
 	instanceMatrices.clear();
 	
 	for (int i = 0; i < count; i++)
@@ -386,22 +518,28 @@ void ObstacleActor::draw()
 {	
 	World* myWorld = World::Get();
 
-	obstacle->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, instanceCount);
+	obstacle->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, m_instanceCount);
 }
 
 void ObstacleActor::calculateLocalCollisionShape()
 {
 }
 
+namespace {
+	// 注册GeneralMeshActor到Actor工厂
+	struct GeneralMeshActorRegistrar {
+		GeneralMeshActorRegistrar() {
+			Actor::RegisterActor("GeneralMeshActor", []() {
+				// 创建无参实例（加载时会调用Load方法初始化路径）
+				return new GeneralMeshActor();
+				});
+		}
+	} generalMeshActorRegistrar; // 全局变量，程序启动时自动执行构造函数
+}
+
 GeneralMeshActor::GeneralMeshActor(std::string path)
 {
-	World* myWorld = World::Get();
-	mesh = new StaticMesh(myWorld->GetCore(), path);
-	setCollidable(true);
-	setCollisionShapeType(CollisionShapeType::AABB);
-	mesh->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
-	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
-	calculateLocalCollisionShape();
+	initMesh(path);
 }
 
 void GeneralMeshActor::draw()
@@ -420,10 +558,10 @@ void GeneralMeshActor::calculateLocalCollisionShape()
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
-	for (auto mesh : mesh->meshes)
+	for (auto submesh : mesh->meshes)
 	{
 		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = submesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -434,6 +572,37 @@ void GeneralMeshActor::calculateLocalCollisionShape()
 	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
+
+void GeneralMeshActor::initMesh(const std::string& path)
+{
+	m_path = path;
+
+	// 释放旧的mesh（防止内存泄漏）
+	if (mesh) {
+		delete mesh;
+		mesh = nullptr;
+	}
+
+	// 重新创建mesh
+	World* myWorld = World::Get();
+	mesh = new StaticMesh(myWorld->GetCore(), path);
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::AABB);
+	mesh->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	calculateLocalCollisionShape();
+}
+
+//namespace {
+//	// 注册GeneralMeshActor到Actor工厂
+//	struct GeneralMeshActorRegistrar {
+//		GeneralMeshActorRegistrar() {
+//			Actor::RegisterActor("GeneralMeshActor", []() {
+//				// 创建无参实例（加载时会调用Load方法初始化路径）
+//				return new GeneralMeshActor();
+//				});
+//		}
+//	} generalMeshActorRegistrar; // 全局变量，程序启动时自动执行构造函数
+//}
 
 void BulletActor::OnTick(float dt)
 {
@@ -520,6 +689,14 @@ void BulletActor::calculateLocalCollisionShape()
 
 	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+namespace {
+	struct EnemyActorRegistrar {
+		EnemyActorRegistrar() {
+			Actor::RegisterActor("EnemyActor", []() { return new EnemyActor(); });
+		}
+	} enemyActorRegistrar;
 }
 
 EnemyActor::EnemyActor()

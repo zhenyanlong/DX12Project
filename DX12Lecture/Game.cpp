@@ -61,6 +61,10 @@ void submitToCommandList(Core* core, std::vector<ConstantBuffer>& constantBuffer
 	}
 }
 
+// 关卡路径定义
+const std::string LEVEL1_PATH = "level1.lvl";
+const std::string LEVEL2_PATH = "level2.lvl";
+int currentLevel = 1; // 当前关卡索引
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR lpCmdLine, int nCmdShow)
@@ -76,8 +80,10 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	GeneralMatrix* gm = GeneralMatrix::Create();
 	TextureManager* textures = TextureManager::Create();
 
-	// load new level with shared ptr
-	myWorld->LoadNewLevel(std::make_shared<TestMap>());
+	// 初始加载TestMap并保存为关卡1
+	auto initialLevel = std::make_shared<TestMap>();
+	initialLevel->SaveLevel(LEVEL1_PATH); // 初始保存
+	myWorld->LoadNewLevel(initialLevel);
 
 	Actor* mainActor = myWorld->GetLevel()->GetActor("FPSActor");
 	CameraControllable* mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
@@ -139,7 +145,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	}
 	if (mainCameraController)
 	{
-		mainCameraController->updatePos(Vec3(40.0f, 15.0f, 0.0f));
+		mainCameraController->updatePos(myWorld->GetLevel()->GetSpawnPoint());
 	}
 	
 	
@@ -147,6 +153,44 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	{
 		//Process messages 
 		win.processMessages();
+
+		// ===== 关卡切换逻辑 =====
+		// 按1：切换到关卡1（加载/保存）
+		if (win.keys['1'] && win.keyJustPressed['1']) {
+			auto level1 = std::make_shared<TestMap>();
+			if (level1->LoadLevel(LEVEL1_PATH)) {
+				myWorld->LoadNewLevel(level1);
+				// 更新玩家Actor和位置
+				mainActor = myWorld->GetLevel()->GetActor("FPSActor");
+				mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
+				if (mainCameraController)
+				{
+					mainCameraController->updatePos(myWorld->GetLevel()->GetSpawnPoint());
+				}
+			}
+			currentLevel = 1;
+			//win.keyJustPressed['1'] = false; // 防止连续触发
+		}
+
+		// 按2：切换到关卡2（加载/保存）
+		if (win.keys['2'] && win.keyJustPressed['2']) {
+			auto level2 = std::make_shared<TestMap>();
+			if (!level2->LoadLevel(LEVEL2_PATH)) {
+				// 若关卡2不存在，初始化并保存
+				level2->SetSpawnPoint(Vec3(60.0f, 15.0f, 0.0f)); // 自定义出生点
+				level2->SaveLevel(LEVEL2_PATH);
+			}
+			myWorld->LoadNewLevel(level2);
+			// 更新玩家Actor和位置
+			mainActor = myWorld->GetLevel()->GetActor("FPSActor");
+			mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
+			if (mainCameraController)
+			{
+				mainCameraController->updatePos(myWorld->GetLevel()->GetSpawnPoint());
+			}
+			currentLevel = 2;
+			//win.keyJustPressed['2'] = false;
+		}
 
 		// update time
 		myWorld->UpdateTime();
@@ -189,6 +233,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		//
 
 		Vec3 cameraForward;
+		Vec3 cameraLeft;
 		// begin play
 		myWorld->ExecuteBeginPlays();
 		// ===================== 1. 鼠标控制视角（FPS核心） =====================
@@ -229,7 +274,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				cameraForward.y = 0.f;
 			}*/
 			// 计算相机右方向（用于WASD横向移动）
-			Vec3 cameraRight = Cross(cameraForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
+			cameraLeft = Cross(cameraForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
 			Vec3 cameraUp = Vec3(0.0f, 1.0f, 0.0f); // FPS固定上方向为世界Y轴
 
 			Vec3 moveRight = Cross(moveForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
@@ -285,8 +330,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 				if (win.keys['W']) desiredMove += cameraForward * CAMERA_MOVE_SPEED * dt;
 				if (win.keys['S']) desiredMove -= cameraForward * CAMERA_MOVE_SPEED * dt;
-				if (win.keys['A']) desiredMove += cameraRight * CAMERA_MOVE_SPEED * dt;
-				if (win.keys['D']) desiredMove -= cameraRight * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['A']) desiredMove += cameraLeft * CAMERA_MOVE_SPEED * dt;
+				if (win.keys['D']) desiredMove -= cameraLeft * CAMERA_MOVE_SPEED * dt;
 				if (win.keys['Q']) desiredMove.y -= CAMERA_MOVE_SPEED * dt;
 				if (win.keys['E']) desiredMove.y += CAMERA_MOVE_SPEED * dt;
 			}
@@ -453,7 +498,8 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				fpsAnimation->TriggerFire();
 				if (testbool)
 				{
-					myWorld->addActor("bullet1", new BulletActor(fpsActor->getWorldPos()+ cameraForward*2.f, cameraForward, 100.f));
+					Vec3 up = Cross(cameraLeft, cameraForward).normalize();
+					myWorld->addActor("bullet1", new BulletActor(fpsActor->getWorldPos() + cameraForward * 2.f - cameraLeft * 0.4 - up * 0.6, cameraForward, 100.f));
 					testbool = false;
 				}
 				

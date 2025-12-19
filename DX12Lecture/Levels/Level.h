@@ -3,12 +3,14 @@
 #include "map"
 #include "Actor.h"
 #include "Mesh.h"
+#include <fstream>
+#include <string>
+#include "Vec3.h"
 class Level
 {
 protected:
 	std::map<std::string, Actor*> m_actors;
-
-	
+	Vec3 m_spawnPoint = Vec3(40.0f, 15.0f, 0.0f); // 出生点（默认值）
 
 public:
 	// construct
@@ -108,6 +110,15 @@ public:
 		}
 	}
 	virtual void draw() = 0;
+
+	public:
+		// 出生点相关
+		void SetSpawnPoint(const Vec3& pos) { m_spawnPoint = pos; }
+		Vec3 GetSpawnPoint() const { return m_spawnPoint; }
+
+		// 关卡保存/加载
+		virtual bool SaveLevel(const std::string& filePath);
+		virtual bool LoadLevel(const std::string& filePath);
 };
 
 

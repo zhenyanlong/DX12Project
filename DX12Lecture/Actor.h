@@ -5,6 +5,10 @@
 #include "Collision.h"
 #include "Animation/FPSAnimationStateMachine.h"
 #include "Animation/EnemyAnimationStateMachine.h"
+#include <fstream>
+#include <string>
+#include <map>
+#include <functional>
 
 enum class ActorType {
 	None,
@@ -92,6 +96,26 @@ public:
 public:
 	// draw
 	virtual void draw() = 0;
+
+	// 工厂模式相关
+public:
+	using ActorCreator = std::function<Actor* ()>;
+	static std::map<std::string, ActorCreator> m_actorCreators;
+	static void RegisterActor(const std::string& className, ActorCreator creator);
+	static Actor* CreateActorByClassName(const std::string& className);
+
+	// 序列化相关
+public:
+	// 获取类名（子类实现）
+	virtual std::string GetClassName() const = 0;
+	// 保存/加载（子类实现）
+	virtual void Save(std::ofstream& file) const = 0;
+	virtual void Load(std::ifstream& file) = 0;
+
+protected:
+	// 保存/加载基类公共数据（避免子类重复代码）
+	void SaveBase(std::ofstream& file) const;
+	void LoadBase(std::ifstream& file);
 };
 
 class SkyBoxActor: public Actor
@@ -116,18 +140,33 @@ public:
 	virtual Vec3 getWorldRotation() const override { return skybox->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { skybox->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+
+public:
+	// 类名
+	std::string GetClassName() const override { return "SkyBoxActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class TreeActor : public Actor
 {
 	StaticMesh* willow;
 	std::vector<Matrix> instanceMatrices; // 存储每个实例的世界矩阵
-	int instanceCount; // 实例数量
+	int m_instanceCount; // 实例数量
+	Vec3 m_transIncrement;
 public:
 	// 生成随机位置的实例矩阵
-	void generateInstanceMatrices(int count, float radius, float height);
+	void generateInstanceMatrices(int count, Vec3 transIncrement);
 
-	TreeActor(int count = 50);
+	//TreeActor();
+	TreeActor(int count = 50, Vec3 transIncrement = Vec3(0.f, 0.f, 20.f));
 	virtual void draw() override;
 
 	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
@@ -145,6 +184,27 @@ public:
 	virtual Vec3 getWorldRotation() const override { return willow->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { willow->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+
+public:
+	// 类名
+	std::string GetClassName() const override { return "TreeActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+		// 保存特有数据
+		file.write(reinterpret_cast<const char*>(&m_instanceCount), sizeof(int));
+		file.write(reinterpret_cast<const char*>(&m_transIncrement), sizeof(Vec3));
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+		// 加载特有数据
+		file.read(reinterpret_cast<char*>(&m_instanceCount), sizeof(int));
+		file.read(reinterpret_cast<char*>(&m_transIncrement), sizeof(Vec3));
+
+		generateInstanceMatrices(m_instanceCount, m_transIncrement);
+	}
 };
 
 class WaterActor : public Actor
@@ -170,6 +230,18 @@ public:
 	virtual Vec3 getWorldRotation() const override { return water->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { water->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+public:
+	// 类名
+	std::string GetClassName() const override { return "WaterActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class FPSActor : public Actor, public CameraControllable 
@@ -210,6 +282,18 @@ public:
 
 	virtual void OnBeginPlay() override;
 	virtual void OnTick(float dt) override;
+public:
+	// 类名
+	std::string GetClassName() const override { return "FPSActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class EnemyActor : public Actor
@@ -243,6 +327,19 @@ public:
 	virtual void OnTick(float dt) override;
 
 	void Destroy() { m_isDestroyed = true; }
+
+public:
+	// 类名
+	std::string GetClassName() const override { return "EnemyActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 class BoxActor : public Actor
 {
@@ -266,6 +363,19 @@ public:
 	virtual Vec3 getWorldRotation() const override { return box->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { box->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+
+public:
+	// 类名
+	std::string GetClassName() const override { return "BoxActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class GroundActor : public Actor
@@ -290,6 +400,18 @@ public:
 	virtual Vec3 getWorldRotation() const override { return ground->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { ground->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+public:
+	// 类名
+	std::string GetClassName() const override { return "GroundActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class ContainerBlueActor : public Actor
@@ -314,6 +436,18 @@ public:
 	virtual Vec3 getWorldRotation() const override { return container->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { container->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+public:
+	// 类名
+	std::string GetClassName() const override { return "ContainerBlueActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class BlockActor :public Actor
@@ -338,15 +472,28 @@ public:
 	virtual Vec3 getWorldRotation() const override { return box->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { box->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+public:
+	// 类名
+	std::string GetClassName() const override { return "BlockActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+	}
 };
 
 class ObstacleActor	:public Actor
 {
 	StaticMesh* obstacle;
 	std::vector<Matrix> instanceMatrices; // 存储每个实例的世界矩阵
-	int instanceCount; // 实例数量
+	int m_instanceCount; // 实例数量
+	Vec3 m_offset;
 public:
-	ObstacleActor(int count = 5);
+	ObstacleActor(int count = 5, Vec3 offset = Vec3(0.f, 0.f, 5.f));
 
 	void generateInstanceMatrices(int count, Vec3 offset);
 
@@ -367,14 +514,41 @@ public:
 	virtual Vec3 getWorldRotation() const override { return obstacle->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { obstacle->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+public:
+	// 类名
+	std::string GetClassName() const override { return "ObstacleActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+
+		file.write(reinterpret_cast<const char*>(&m_instanceCount), sizeof(int));
+		file.write(reinterpret_cast<const char*>(&m_offset), sizeof(Vec3));
+
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+		file.read(reinterpret_cast<char*>(&m_instanceCount), sizeof(int));
+		file.read(reinterpret_cast<char*>(&m_offset), sizeof(Vec3));
+
+		generateInstanceMatrices(m_instanceCount, m_offset);
+	}
 };
 
 class GeneralMeshActor :public Actor
 {
 	StaticMesh* mesh;
+	std::string m_path;
 public:
 	GeneralMeshActor(std::string path = "Models/container_005.gem");
-
+	virtual ~GeneralMeshActor()	override
+	{
+		if (mesh) {
+			delete mesh;
+			mesh = nullptr;
+		}
+	}
 	virtual void draw() override;
 	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
 	virtual void calculateLocalCollisionShape() override;
@@ -391,6 +565,55 @@ public:
 	virtual Vec3 getWorldRotation() const override { return mesh->GetWorldRotationRadian(); }
 	virtual void setWorldRotation(Vec3 worldRotation) override { mesh->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
+public:
+	// 类名
+	std::string GetClassName() const override { return "GeneralMeshActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		// 1. 保存Actor基类数据
+		SaveBase(file);
+
+		// 2. 保存m_path的长度（int类型）
+		int pathLen = static_cast<int>(m_path.size());
+		file.write(reinterpret_cast<const char*>(&pathLen), sizeof(int));
+
+		// 3. 保存m_path的字符内容
+		if (pathLen > 0) {
+			file.write(m_path.c_str(), pathLen);
+		}
+	}
+	void Load(std::ifstream& file) override
+	{
+		// 1. 加载Actor基类数据
+		LoadBase(file);
+
+		// 2. 读取m_path的长度
+		int pathLen;
+		file.read(reinterpret_cast<char*>(&pathLen), sizeof(int));
+
+		// 3. 读取m_path的字符内容
+		std::string path;
+		if (pathLen > 0) {
+			path.resize(pathLen);
+			file.read(&path[0], pathLen);
+		}
+		Vec3 scale = getWorldScale(); // LoadBase已经加载了缩放，这里获取后重新设置
+		Vec3 pos = getWorldPos();
+		Vec3 rot = getWorldRotation();
+		// 4. 根据新路径重新初始化mesh（会自动恢复缩放、碰撞体等配置）
+		initMesh(path);
+
+		// 5. 恢复基类加载的世界位置、旋转、缩放（因为initMesh会设置默认缩放，需要覆盖）
+		// 注意：LoadBase已经调用了setWorldPos/setWorldRotation/setWorldScale，但initMesh可能会修改缩放，所以这里需要重新应用
+		// 解决方案：将initMesh中的缩放设置移除，改为在序列化时保存缩放（推荐），或在Load后重新应用
+		// 优化：将mesh的缩放也纳入序列化（当前基类已经保存了worldScale，所以Load后重新设置即可）
+		mesh->SetWorldPos(pos);
+		mesh->SetWorldRotationRadian(rot);
+		mesh->SetWorldScaling(scale);
+	}
+private:
+	void initMesh(const std::string& path);
 };
 
 class BulletActor : public Actor
@@ -427,4 +650,27 @@ public:
 	// **** world info interface ****//
 
 	void Destroy() { m_isDestroyed = true; }
+
+public:
+	// 类名
+	std::string GetClassName() const override { return "BulletActor"; }
+	// 序列化
+	void Save(std::ofstream& file) const override
+	{
+		SaveBase(file);
+
+		file.write(reinterpret_cast<const char*>(&m_direction), sizeof(Vec3));
+		file.write(reinterpret_cast<const char*>(&m_speed), sizeof(float));
+		file.write(reinterpret_cast<const char*>(&m_damage), sizeof(int));
+		file.write(reinterpret_cast<const char*>(&m_lifeTime), sizeof(float));
+	}
+	void Load(std::ifstream& file) override
+	{
+		LoadBase(file);
+
+		file.read(reinterpret_cast<char*>(&m_direction), sizeof(Vec3));
+		file.read(reinterpret_cast<char*>(&m_speed), sizeof(float));
+		file.read(reinterpret_cast<char*>(&m_damage), sizeof(int));
+		file.read(reinterpret_cast<char*>(&m_lifeTime), sizeof(float));
+	}
 };
