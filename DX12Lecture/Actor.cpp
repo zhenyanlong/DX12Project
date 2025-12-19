@@ -1,6 +1,7 @@
 #include "Actor.h"
 #include "World.h"
 #include "Animation/FPSAnimationStateMachine.h"
+#include "Animation/EnemyAnimationStateMachine.h"
 #define M_PI       3.14159265358979323846
 SkyBoxActor::SkyBoxActor()
 {
@@ -460,6 +461,7 @@ void BulletActor::OnTick(float dt)
 		else if (actor->getActorType() == ActorType::Enemy)
 		{
 			// execute damage api
+			dynamic_cast<EnemyActor*>(actor)->animStateMachine->TriggerDeath();
 
 		}
 	}
@@ -518,4 +520,73 @@ void BulletActor::calculateLocalCollisionShape()
 
 	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+EnemyActor::EnemyActor()
+{
+	World* myWorld = World::Get();
+	enemy_Mesh = new AnimatedModel(myWorld->GetCore(), "Models/Duck-white.gem");
+	enemy_Mesh->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
+	setCollidable(true);
+	setCollisionShapeType(CollisionShapeType::Sphere);
+	animatedInstance = new AnimationInstance();
+	animatedInstance->init(&enemy_Mesh->animation, 0);
+	m_actorType = ActorType::Enemy;
+	calculateLocalCollisionShape();
+
+	// 新增：初始化动画状态机
+	animStateMachine = new EnemyAnimationStateMachine(enemy_Mesh, animatedInstance);
+}
+
+EnemyActor::~EnemyActor()
+{
+	delete animStateMachine;
+	delete animatedInstance;
+	delete enemy_Mesh;
+}
+
+void EnemyActor::draw()
+{
+	World* myWorld = World::Get();
+	enemy_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime(), animStateMachine);
+}
+
+void EnemyActor::calculateLocalCollisionShape()
+{
+	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+	if (!enemy_Mesh)
+		return;
+
+	// 遍历Mesh顶点，扩展局部AABB和Sphere
+	m_localAABB.reset();
+	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
+
+	for (auto* mesh : enemy_Mesh->meshes)
+	{
+		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
+		auto vertices = mesh->getVertices(); // 自定义方法，返回std::vector<Vec3>
+		for (const auto& v : vertices)
+		{
+			m_localAABB.extend(v);
+			m_localSphere.extend(v);
+		}
+	}
+
+	// 调整Sphere中心（与AABB中心一致）
+	m_localSphere.centre = m_localAABB.getCenter();
+}
+
+void EnemyActor::OnBeginPlay()
+{
+}
+
+void EnemyActor::OnTick(float dt)
+{
+	if (animStateMachine) {
+		animStateMachine->Update(dt); // 调用状态机更新
+	}
+	if (animStateMachine->IsDeathFinished())
+	{
+		Destroy();
+	}
 }

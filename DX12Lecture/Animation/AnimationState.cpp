@@ -1,5 +1,6 @@
 #include "AnimationState.h"
 #include "Animation/AnimationStateMachine.h"
+#include "Animation/EnemyAnimationStateMachine.h"
 AnimationStateMachine* AnimationState::GetStateMachine() const
 {
 	return m_stateMachine;
@@ -63,5 +64,35 @@ void FPSFireState::OnUpdate(float dt) {
 		fpsSM->ChangeState(fpsSM->m_prevState);
 		// 重置动画时间
 		fpsSM->m_animInstance->resetAnimationTime();
+	}
+}
+
+void DuckIdlestate::OnUpdate(float dt)
+{
+	auto duckSM = dynamic_cast<EnemyAnimationStateMachine*>(GetStateMachine());
+	if (duckSM) {
+		duckSM->ChangeState("Idle"); // 混合过渡到Idle
+	}
+}
+
+void DuckDeathState::OnEnter()
+{
+	auto duckSM = dynamic_cast<EnemyAnimationStateMachine*>(GetStateMachine());
+	duckSM->m_animInstance->resetAnimationTime();
+	if (duckSM) {
+		duckSM->m_death = true;
+	}
+}
+
+void DuckDeathState::OnUpdate(float dt)
+{
+	auto duckSM = dynamic_cast<EnemyAnimationStateMachine*>(GetStateMachine());
+	if (duckSM && duckSM->m_animInstance->animationFinished()) {
+		duckSM->m_death = false;
+		duckSM->m_deathFinished = true;
+		
+		// 重置动画时间
+		//duckSM->m_animInstance->resetAnimationTime();
+
 	}
 }

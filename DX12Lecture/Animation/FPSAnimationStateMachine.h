@@ -35,12 +35,19 @@ public:
 	// 外部控制接口（供FPSActor调用）
 	void SetMoving(bool isMoving) { m_isMoving = isMoving; }
 	void TriggerReload() { 
-		if (!m_isReloading && !m_isFiring) 
-		{ m_isReloading = true; m_prevState = GetCurrentState()->GetStateName(); ChangeState("Reload"); 
-		} 
+		/*if (!m_isReloading && !m_isFiring)
+		{ m_isReloading = true; m_prevState = GetCurrentState()->GetStateName(); ChangeState("Reload");
+		} */
 		ChangeState("Reload");
 	}
-	void TriggerFire() { if (!m_isReloading && !m_isFiring) { m_isFiring = true; m_prevState = GetCurrentState()->GetStateName(); ChangeState("Fire"); } }
+	void TriggerFire() 
+	{ 
+		if (!m_isReloading && !m_isFiring) 
+		{ 
+			m_isFiring = true; m_prevState = GetCurrentState()->GetStateName(); 
+			ChangeState("Fire"); 
+		} 
+	}
 
 	// 获取状态标记
 	bool IsReloading() const { return m_isReloading; }

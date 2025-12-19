@@ -65,3 +65,22 @@ public:
 	void OnEnter() override;
 	void OnUpdate(float dt) override;
 };
+
+//enemy state
+class DuckIdlestate : public AnimationState
+{
+public:
+	DuckIdlestate(AnimationStateMachine* sm)
+		: AnimationState(sm, "Idle", "idle", true, 1.0f) {}
+	
+	void OnUpdate(float dt) override;
+};
+
+class DuckDeathState : public AnimationState
+{
+public:
+	DuckDeathState(AnimationStateMachine* sm)
+		: AnimationState(sm, "Death", "death", false, 1.0f) {}
+	void OnEnter() override;
+	void OnUpdate(float dt) override;
+};

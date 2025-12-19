@@ -4,6 +4,7 @@
 #include "ICameraControllable.h"
 #include "Collision.h"
 #include "Animation/FPSAnimationStateMachine.h"
+#include "Animation/EnemyAnimationStateMachine.h"
 
 enum class ActorType {
 	None,
@@ -211,6 +212,38 @@ public:
 	virtual void OnTick(float dt) override;
 };
 
+class EnemyActor : public Actor
+{
+	AnimatedModel* enemy_Mesh;
+	AnimationInstance* animatedInstance;
+public:
+	EnemyAnimationStateMachine* animStateMachine; // 新增：动画状态机
+
+	EnemyActor();
+	virtual ~EnemyActor() override; // 新增：析构函数释放资源
+	virtual void draw() override;
+
+	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	virtual void calculateLocalCollisionShape() override;
+	// **** world info interface ****//
+	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	virtual Matrix getWorldMatrix() const override { return enemy_Mesh->GetWorldMatrix(); }
+
+	virtual Vec3 getWorldPos() const override { return enemy_Mesh->GetWorldPos(); }
+	virtual void setWorldPos(Vec3 worldPos) override { enemy_Mesh->SetWorldPos(worldPos); }
+
+	virtual Vec3 getWorldScale() const override { return enemy_Mesh->GetWorldScale(); }
+	virtual void setWorldScale(Vec3 worldScale) override { enemy_Mesh->SetWorldScaling(worldScale); }
+
+	virtual Vec3 getWorldRotation() const override { return enemy_Mesh->GetWorldRotationRadian(); }
+	virtual void setWorldRotation(Vec3 worldRotation) override { enemy_Mesh->SetWorldRotationRadian(worldRotation); }
+	// **** world info interface ****//
+
+	virtual void OnBeginPlay() override;
+	virtual void OnTick(float dt) override;
+
+	void Destroy() { m_isDestroyed = true; }
+};
 class BoxActor : public Actor
 {
 	StaticMesh* box;

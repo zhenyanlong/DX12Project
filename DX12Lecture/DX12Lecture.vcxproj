@@ -145,6 +145,7 @@
     <ClInclude Include="Actors\Test.h" />
     <ClInclude Include="Animation\AnimationState.h" />
     <ClInclude Include="Animation\AnimationStateMachine.h" />
+    <ClInclude Include="Animation\EnemyAnimationStateMachine.h" />
     <ClInclude Include="Animation\FPSAnimationStateMachine.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="ConstantBuffer.h" />
@@ -173,6 +174,7 @@
     <ClCompile Include="Actors\Test.cpp" />
     <ClCompile Include="Animation\AnimationState.cpp" />
     <ClCompile Include="Animation\AnimationStateMachine.cpp" />
+    <ClCompile Include="Animation\EnemyAnimationStateMachine.cpp" />
     <ClCompile Include="Animation\FPSAnimationStateMachine.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="ConstantBuffer.cpp" />

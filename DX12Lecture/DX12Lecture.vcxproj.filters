@@ -123,6 +123,9 @@
     <ClInclude Include="Animation\AnimationState.h">
       <Filter>Header Files\Animation</Filter>
     </ClInclude>
+    <ClInclude Include="Animation\EnemyAnimationStateMachine.h">
+      <Filter>Header Files\Animation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Window.cpp">
@@ -192,6 +195,9 @@
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
     <ClCompile Include="Animation\AnimationState.cpp">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Animation\EnemyAnimationStateMachine.cpp">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
   </ItemGroup>

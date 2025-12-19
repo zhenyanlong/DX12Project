@@ -110,7 +110,7 @@ std::vector<Actor*> CollisionResolver::CheckCollision(Actor* const controlledAct
 
     for (auto* actor : collidableActors)
     {
-        if (!actor->isCollidable() || actor == controlledActor|| actor->getActorType()!=ActorType::Static)
+        if (!actor->isCollidable() || actor == controlledActor|| (actor->getActorType()!=ActorType::Static&&actor->getActorType()!=ActorType::Enemy))
             continue;
 
         CollisionShapeType controlledShape = controlledActor->getCollisionShapeType();

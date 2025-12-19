@@ -104,6 +104,11 @@ TestMap::TestMap()
 	obstacleActor1->setWorldRotation(Vec3(0.f, PI / 2, 0.f));
 	dynamic_cast<ObstacleActor*>(obstacleActor1)->generateInstanceMatrices(10, Vec3(0.f, 0.f, 20.f));
 	m_actors["ObstacleActor1"] = obstacleActor1;
+
+	Actor* duckactor = new EnemyActor();
+	duckactor->setWorldPos(Vec3(30.f, 0.f, -30.f));
+
+	m_actors["duckactor"] = duckactor;
 	
 }
 
