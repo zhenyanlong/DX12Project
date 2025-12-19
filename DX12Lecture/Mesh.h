@@ -406,7 +406,7 @@ public:
 	//void draw(Core* core, PSOManager& psos, Mesh& prim)
 	void CreateFromGEM(Core* core, std::string filename);
 	void CreateFromSphere(Core* core, int rings, int segments, float radius, std::string skyPath);
-	void CreateFromPlane(Core* core, float sizeX = 100.0f, float sizeZ = 100.f, int xSegments = 100, int zSegments = 100, std::string texName = "Models/Textures/Textures1_ALB.png");
+	void CreateFromPlane(Core* core, float sizeX = 100.0f, float sizeZ = 100.f, int xSegments = 100, int zSegments = 100, std::string texName = "Models/Textures/Textures1_ALB.png", std::string nhName = "Models/Textures/Textures1_NH.png");
 
 private:
 	void drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName, int instanceCount = 1);

@@ -205,7 +205,7 @@ FPSActor::~FPSActor()
 void FPSActor::draw()
 {
 	World* myWorld = World::Get();
-	fps_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime(), animStateMachine);
+	fps_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_LIGHT_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime(), animStateMachine);
 }
 
 void FPSActor::updatePos(Vec3 pos)
@@ -327,7 +327,7 @@ GroundActor::GroundActor()
 {
 	World* myWorld = World::Get();
 	ground = new StaticMesh();
-	ground->CreateFromPlane(myWorld->GetCore(), 10000, 20000, 10, 10);
+	ground->CreateFromPlane(myWorld->GetCore(), 10000, 20000, 10, 10,"Models/Textures/concrete_floor_damaged_01_diff_1k.png","Models/Textures/concrete_floor_damaged_01_nor_dx_1k.png");
 	setCollidable(true);
 	setCollisionShapeType(CollisionShapeType::AABB);
 	calculateLocalCollisionShape();
@@ -337,7 +337,7 @@ void GroundActor::draw()
 {
 	World* myWorld = World::Get();
 	
-	ground->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+	ground->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_LIGHT_PIPE, myWorld->GetPipelines());
 }
 
 void GroundActor::calculateLocalCollisionShape()
@@ -545,7 +545,7 @@ GeneralMeshActor::GeneralMeshActor(std::string path)
 void GeneralMeshActor::draw()
 {
 	World* myWorld = World::Get();
-	mesh->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
+	mesh->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_LIGHT_PIPE, myWorld->GetPipelines());
 }
 
 void GeneralMeshActor::calculateLocalCollisionShape()
@@ -725,7 +725,7 @@ EnemyActor::~EnemyActor()
 void EnemyActor::draw()
 {
 	World* myWorld = World::Get();
-	enemy_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime(), animStateMachine);
+	enemy_Mesh->drawSingle(myWorld->GetCore(), myWorld->GetPSOManager(), ANIM_LIGHT_PIPE, myWorld->GetPipelines(), animatedInstance, myWorld->GetDeltatime(), animStateMachine);
 }
 
 void EnemyActor::calculateLocalCollisionShape()

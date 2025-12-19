@@ -56,7 +56,7 @@ float4 PS(PS_INPUT input) : SV_Target0
     //diffuse = (linearAlbedo / 3.1415926535) * max(NdotL, 0.0);
     
     // 7. 最终颜色计算（光源颜色×强度×漫反射 + 环境光(强度0.1)）
-    float3 finalColor = diffuse * lightColor * lightIntensity + linearAlbedo * 0.2;
+    float3 finalColor = diffuse * lightColor * lightIntensity + linearAlbedo * 0.5;
 
     
     return float4(finalColor, 1.0);

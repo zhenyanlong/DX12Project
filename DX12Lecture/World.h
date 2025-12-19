@@ -46,6 +46,7 @@ const std::string STATIC_LIGHT_WATER_PIPE = "Static_Mesh_Light_Water";
 const std::string VS_PATH = "VertexShader.hlsl";
 const std::string VS_BIT_PATH = "Shaders/VertexShaderBitangent.hlsl";
 const std::string VS_ANIM_PATH = "Shaders/VertexShaderAnim.hlsl";
+const std::string VS_ANIM_BIT_PATH = "Shaders/VertexShaderAnimBitangent.hlsl";
 const std::string VS_INS_PATH = "Shaders/VertexShaderInstanced.hlsl";
 const std::string VS_INS_BIT_PATH = "Shaders/VertexShaderInstBit.hlsl";
 const std::string PS_PATH = "PixelShaderTextured.hlsl";
@@ -68,6 +69,7 @@ class World
 		m_pipes = new Pipelines();
 		m_pipes->loadPipeline(core, STATIC_PIPE, m_psos, VS_PATH, PS_PATH, VertexLayoutCache::getStaticLayout());									// static mesh no light
 		m_pipes->loadPipeline(core, ANIM_PIPE, m_psos, VS_ANIM_PATH, PS_PATH, VertexLayoutCache::getAnimatedLayout());								// anim mesh no light
+		m_pipes->loadPipeline(core, ANIM_LIGHT_PIPE, m_psos, VS_ANIM_BIT_PATH, PS_LIGHT_PATH, VertexLayoutCache::getAnimatedLayout());				// anim mesh with light
 		m_pipes->loadPipeline(core, STATIC_INSTANCE_PIPE, m_psos, VS_INS_PATH, PS_PATH, VertexLayoutCache::getInstanceLayout());					// static instance mesh no light
 		m_pipes->loadPipeline(core, STATIC_LIGHT_PIPE, m_psos, VS_BIT_PATH, PS_LIGHT_PATH, VertexLayoutCache::getStaticLayout());					// static mesh with light
 		m_pipes->loadPipeline(core, STATIC_INSTANCE_LIGHT_PIPE, m_psos, VS_INS_BIT_PATH, PS_LIGHT_PATH, VertexLayoutCache::getInstanceLayout());	// static instance mesh with light

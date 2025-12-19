@@ -232,6 +232,9 @@
     <FxCompile Include="Shaders\PixelShaderWaveAnim.hlsl">
       <Filter>Resource Files\Shaders</Filter>
     </FxCompile>
+    <FxCompile Include="Shaders\VertexShaderAnimBitangent.hlsl">
+      <Filter>Resource Files\Shaders</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\model\Bull-dark.gem">
