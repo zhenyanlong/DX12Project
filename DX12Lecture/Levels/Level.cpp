@@ -108,9 +108,23 @@ TestMap::TestMap()
 
 	Actor* duckactor = new EnemyActor();
 	duckactor->setWorldPos(Vec3(30.f, 0.f, -30.f));
-
 	m_actors["duckactor"] = duckactor;
-	
+
+	Actor* duckactor1 = new EnemyActor();
+	duckactor1->setWorldPos(Vec3(-30.f, 0.f, -30.f));
+	m_actors["duckactor1"] = duckactor1;
+
+	Actor* duckactor2 = new EnemyActor();
+	duckactor2->setWorldPos(Vec3(-30.f, 0.f, 40.f));
+	m_actors["duckactor2"] = duckactor2;
+
+	Actor* duckactor3 = new EnemyActor();
+	duckactor3->setWorldPos(Vec3(0.f, 0.f, 20.f));
+	m_actors["duckactor3"] = duckactor3;
+
+	Actor* duckactor4 = new EnemyActor();
+	duckactor4->setWorldPos(Vec3(10.f, 0.f, 70.f));
+	m_actors["duckactor4"] = duckactor4;
 }
 
 void TestMap::draw()
@@ -126,13 +140,13 @@ bool Level::SaveLevel(const std::string& filePath) {
 		return false;
 	}
 
-	// 1. 写入文件标识（4字节："LVL1"）
-	char signature[] = { 'L', 'V', 'L', '1' };
-	file.write(signature, sizeof(signature));
+	//// 1. 写入文件标识（4字节："LVL1"）
+	//char signature[] = { 'L', 'V', 'L', '1' };
+	//file.write(signature, sizeof(signature));
 
-	// 2. 写入版本号（int，1）
-	int version = 1;
-	file.write(reinterpret_cast<const char*>(&version), sizeof(int));
+	//// 2. 写入版本号（int，1）
+	//int version = 1;
+	//file.write(reinterpret_cast<const char*>(&version), sizeof(int));
 
 	// 3. 写入出生点
 	file.write(reinterpret_cast<const char*>(&m_spawnPoint), sizeof(Vec3));
@@ -171,21 +185,21 @@ bool Level::LoadLevel(const std::string& filePath) {
 		return false;
 	}
 
-	// 1. 验证文件标识
-	char signature[4];
-	file.read(signature, sizeof(signature));
-	if (signature[0] != 'L' || signature[1] != 'V' || signature[2] != 'L' || signature[3] != '1') {
-		file.close();
-		return false;
-	}
+	//// 1. 验证文件标识
+	//char signature[4];
+	//file.read(signature, sizeof(signature));
+	//if (signature[0] != 'L' || signature[1] != 'V' || signature[2] != 'L' || signature[3] != '1') {
+	//	file.close();
+	//	return false;
+	//}
 
-	// 2. 验证版本号
-	int version;
-	file.read(reinterpret_cast<char*>(&version), sizeof(int));
-	if (version != 1) {
-		file.close();
-		return false;
-	}
+	//// 2. 验证版本号
+	//int version;
+	//file.read(reinterpret_cast<char*>(&version), sizeof(int));
+	//if (version != 1) {
+	//	file.close();
+	//	return false;
+	//}
 
 	// 3. 读取出生点
 	file.read(reinterpret_cast<char*>(&m_spawnPoint), sizeof(Vec3));

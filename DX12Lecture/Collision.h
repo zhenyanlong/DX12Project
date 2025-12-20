@@ -9,7 +9,8 @@ enum class CollisionShapeType
 {
 	None,       // 无碰撞
 	AABB,       // 轴对齐包围盒
-	Sphere      // 球体包围盒
+	Sphere,      // 球体包围盒
+	OBB         // 定向包围盒（适合旋转的动态物体）
 };
 
 // 碰撞检测结果（包含碰撞状态、法向量、穿透深度）
@@ -70,6 +71,94 @@ public:
 	Vec3 getHalfExtents() const { return (max - min) * 0.5f; }
 };
 
+class OBB
+{
+public:
+	Vec3 center;          // 世界空间中心
+	Vec3 xAxis;           // 局部X轴（单位向量，世界空间）
+	Vec3 yAxis;           // 局部Y轴（单位向量，世界空间）
+	Vec3 zAxis;           // 局部Z轴（单位向量，世界空间）
+	Vec3 halfExtents;     // 沿每个轴的半长度（世界空间）
+
+	OBB() = default;
+
+	// 从局部AABB和世界矩阵生成世界OBB（核心：将局部AABB转换为带旋转的世界OBB）
+	static OBB fromAABB(const AABB& localAABB, Matrix worldMat)
+	{
+		OBB obb;
+		// 1. 局部AABB的中心和半长
+		Vec3 localCenter = localAABB.getCenter();
+		Vec3 localHalfExtents = localAABB.getHalfExtents();
+
+		// 2. 将局部中心转换到世界空间（包含平移、旋转、缩放）
+		obb.center = worldMat.mulPoint(localCenter);
+
+		// 3. 提取世界矩阵的旋转+缩放轴（前三列）
+		Vec3 axisX(worldMat.m[0], worldMat.m[4], worldMat.m[8]);
+		Vec3 axisY(worldMat.m[1], worldMat.m[5], worldMat.m[9]);
+		Vec3 axisZ(worldMat.m[2], worldMat.m[6], worldMat.m[10]);
+
+		// 4. 计算每个轴的缩放因子（轴的长度）
+		float scaleX = axisX.length();
+		float scaleY = axisY.length();
+		float scaleZ = axisZ.length();
+
+		// 5. 设置OBB的局部轴（单位向量，去除缩放影响）
+		obb.xAxis = scaleX > 1e-6f ? axisX / scaleX : Vec3(1, 0, 0);
+		obb.yAxis = scaleY > 1e-6f ? axisY / scaleY : Vec3(0, 1, 0);
+		obb.zAxis = scaleZ > 1e-6f ? axisZ / scaleZ : Vec3(0, 0, 1);
+
+		// 6. 设置OBB的半长（局部半长 × 缩放因子）
+		obb.halfExtents.x = localHalfExtents.x * scaleX;
+		obb.halfExtents.y = localHalfExtents.y * scaleY;
+		obb.halfExtents.z = localHalfExtents.z * scaleZ;
+
+		return obb;
+	}
+
+	// 获取OBB的8个顶点（用于碰撞检测的投影计算）
+	std::vector<Vec3> getVertices() const
+	{
+		std::vector<Vec3> vertices;
+		vertices.reserve(8);
+		// 生成逻辑：center ± xAxis*halfExtents.x ± yAxis*halfExtents.y ± zAxis*halfExtents.z
+		for (int i = 0; i < 2; i++)
+		{
+			float x = i ? halfExtents.x : -halfExtents.x;
+			for (int j = 0; j < 2; j++)
+			{
+				float y = j ? halfExtents.y : -halfExtents.y;
+				for (int k = 0; k < 2; k++)
+				{
+					float z = k ? halfExtents.z : -halfExtents.z;
+					vertices.push_back(center + xAxis * x + yAxis * y + zAxis * z);
+				}
+			}
+		}
+		return vertices;
+	}
+};
+
+// 辅助函数：将点集投影到轴上，返回最小/最大投影值
+static void projectPoints(const std::vector<Vec3>& points, const Vec3& axis, float& minProj, float& maxProj)
+{
+	minProj = FLT_MAX;
+	maxProj = -FLT_MAX;
+	for (const auto& p : points)
+	{
+		float proj = Dot(p, axis);
+		minProj = std::min(minProj, proj);
+		maxProj = std::max(maxProj, proj);
+	}
+}
+
+// 辅助函数：计算两个投影区间的重叠深度（负数表示无重叠）
+static float getOverlap(float minA, float maxA, float minB, float maxB)
+{
+	if (maxA < minB || maxB < minA)
+		return -1.0f; // 无重叠
+	return std::min(maxA, maxB) - std::max(minA, minB); // 重叠深度
+}
 // 球体包围盒（局部空间）
 class Sphere
 {
@@ -261,6 +350,114 @@ public:
 			result.isColliding = true;
 			Vec3 hitPoint = ray.at(t);
 			result.normal = (hitPoint - sphere.centre).normalize();
+		}
+
+		return result;
+	}
+
+	// OBB-OBB碰撞检测（分离轴定理SAT）
+	static CollisionResult checkOBBOBB(const OBB& obbA, const OBB& obbB)
+	{
+		CollisionResult result;
+		float minPenetration = FLT_MAX;
+		Vec3 bestAxis; // 最小重叠深度对应的轴（碰撞法向量）
+
+		// 步骤1：收集所有潜在的分离轴（共15个：3+3+9）
+		std::vector<Vec3> axes;
+		// 1. OBB A的三个局部轴
+		axes.push_back(obbA.xAxis);
+		axes.push_back(obbA.yAxis);
+		axes.push_back(obbA.zAxis);
+		// 2. OBB B的三个局部轴
+		axes.push_back(obbB.xAxis);
+		axes.push_back(obbB.yAxis);
+		axes.push_back(obbB.zAxis);
+		// 3. A的轴与B的轴的叉积（9个，可能为零向量）
+		axes.push_back(Cross(obbA.xAxis, obbB.xAxis));
+		axes.push_back(Cross(obbA.xAxis, obbB.yAxis));
+		axes.push_back(Cross(obbA.xAxis, obbB.zAxis));
+		axes.push_back(Cross(obbA.yAxis, obbB.xAxis));
+		axes.push_back(Cross(obbA.yAxis, obbB.yAxis));
+		axes.push_back(Cross(obbA.yAxis, obbB.zAxis));
+		axes.push_back(Cross(obbA.zAxis, obbB.xAxis));
+		axes.push_back(Cross(obbA.zAxis, obbB.yAxis));
+		axes.push_back(Cross(obbA.zAxis, obbB.zAxis));
+
+		// 步骤2：遍历所有轴，检查是否存在分离轴
+		for (auto& axis : axes)
+		{
+			// 忽略零向量（叉积可能为零）
+			if (axis.lengthSq() < 1e-6f)
+				continue;
+			axis = axis.normalize(); // 单位化轴
+
+			// 投影OBB A和B的顶点到当前轴
+			float minA, maxA, minB, maxB;
+			projectPoints(obbA.getVertices(), axis, minA, maxA);
+			projectPoints(obbB.getVertices(), axis, minB, maxB);
+
+			// 检查是否分离（无重叠）
+			float overlap = getOverlap(minA, maxA, minB, maxB);
+			if (overlap < 0)
+				return result; // 存在分离轴，无碰撞
+
+			// 记录最小重叠深度和对应轴
+			if (overlap < minPenetration)
+			{
+				minPenetration = overlap;
+				bestAxis = axis;
+			}
+		}
+
+		// 所有轴都有重叠，发生碰撞
+		result.isColliding = true;
+		result.penetration = minPenetration;
+
+		// 调整法向量方向（指向obbA的外部）
+		Vec3 dir = obbB.center - obbA.center;
+		if (Dot(bestAxis, dir) < 0)
+			bestAxis = -bestAxis;
+		result.normal = bestAxis;
+
+		return result;
+	}
+	// OBB-Sphere碰撞检测
+	static CollisionResult checkOBBSphere(const OBB& obb, const Sphere& sphere)
+	{
+		CollisionResult result;
+
+		// 步骤1：找到OBB上离球心最近的点
+		Vec3 dir = sphere.centre - obb.center;
+		Vec3 closestPoint = obb.center;
+
+		// 投影dir到OBB的每个轴，并限制在半长范围内
+		float proj = Dot(dir, obb.xAxis);
+		proj = std::clamp(proj, -obb.halfExtents.x, obb.halfExtents.x);
+		closestPoint += obb.xAxis * proj;
+
+		proj = Dot(dir, obb.yAxis);
+		proj = std::clamp(proj, -obb.halfExtents.y, obb.halfExtents.y);
+		closestPoint += obb.yAxis * proj;
+
+		proj = Dot(dir, obb.zAxis);
+		proj = std::clamp(proj, -obb.halfExtents.z, obb.halfExtents.z);
+		closestPoint += obb.zAxis * proj;
+
+		// 步骤2：计算球心到最近点的距离
+		Vec3 diff = closestPoint - sphere.centre;
+		float distSq = diff.lengthSq();
+
+		if (distSq < sphere.radius * sphere.radius)
+		{
+			// 发生碰撞
+			result.isColliding = true;
+			float dist = sqrt(distSq);
+			result.penetration = sphere.radius - dist;
+			result.normal = dist > 1e-6f ? diff / dist : Vec3(0, 1, 0); // 避免除零
+
+			// 调整法向量方向（指向球体外）
+			if (Dot(result.normal, sphere.centre - obb.center) < 0)
+				result.normal = -result.normal;
 		}
 
 		return result;

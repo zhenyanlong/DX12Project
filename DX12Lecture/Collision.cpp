@@ -24,6 +24,7 @@ Vec3 CollisionResolver::resolveSlidingCollision(Actor* const controlledActor, co
         controlledActor->setWorldPos(testPos); // 临时设置用于碰撞检测
         auto controlledWorldAABB = controlledActor->getWorldAABB();
         auto controlledWorldSphere = controlledActor->getWorldSphere();
+        auto controlledWorldOBB = controlledActor->getWorldOBB();
 
         for (auto* actor : collidableActors)
         {
@@ -38,13 +39,26 @@ Vec3 CollisionResolver::resolveSlidingCollision(Actor* const controlledActor, co
                     collision = CollisionDetector::checkAABBAABB(controlledWorldAABB, actor->getWorldAABB());
                 else if (controlledShape == CollisionShapeType::Sphere)
                     collision = CollisionDetector::checkSphereAABB(controlledWorldSphere, actor->getWorldAABB());
+				else if (controlledShape == CollisionShapeType::OBB)
+					// 将AABB转换为OBB（轴为单位轴）
+					collision = CollisionDetector::checkOBBOBB(controlledWorldOBB, OBB::fromAABB(actor->getLocalAABB(), actor->getWorldMatrix()));
                 break;
             case CollisionShapeType::Sphere:
                 if (controlledShape == CollisionShapeType::AABB)
                     collision = CollisionDetector::checkSphereAABB(actor->getWorldSphere(), controlledWorldAABB);
                 else if (controlledShape == CollisionShapeType::Sphere)
                     collision = CollisionDetector::checkSphereSphere(controlledWorldSphere, actor->getWorldSphere());
+				else if (controlledShape == CollisionShapeType::OBB)
+					collision = CollisionDetector::checkOBBSphere(controlledWorldOBB, actor->getWorldSphere());
                 break;
+			case CollisionShapeType::OBB:
+				if (controlledShape == CollisionShapeType::AABB)
+					collision = CollisionDetector::checkOBBOBB(OBB::fromAABB(controlledActor->getLocalAABB(), controlledActor->getWorldMatrix()), actor->getWorldOBB());
+				else if (controlledShape == CollisionShapeType::Sphere)
+					collision = CollisionDetector::checkOBBSphere(actor->getWorldOBB(), controlledWorldSphere);
+				else if (controlledShape == CollisionShapeType::OBB)
+					collision = CollisionDetector::checkOBBOBB(controlledWorldOBB, actor->getWorldOBB());
+				break;
             default:
                 continue;
             }
@@ -116,6 +130,7 @@ std::vector<Actor*> CollisionResolver::CheckCollision(Actor* const controlledAct
         CollisionShapeType controlledShape = controlledActor->getCollisionShapeType();
 		auto controlledWorldAABB = controlledActor->getWorldAABB();
 		auto controlledWorldSphere = controlledActor->getWorldSphere();
+        auto controlledWorldOBB = controlledActor->getWorldOBB();
         // check 
 		CollisionResult collision;
 		switch (actor->getCollisionShapeType())
@@ -125,12 +140,25 @@ std::vector<Actor*> CollisionResolver::CheckCollision(Actor* const controlledAct
 				collision = CollisionDetector::checkAABBAABB(controlledWorldAABB, actor->getWorldAABB());
 			else if (controlledShape == CollisionShapeType::Sphere)
 				collision = CollisionDetector::checkSphereAABB(controlledWorldSphere, actor->getWorldAABB());
-			break;
+			else if (controlledShape == CollisionShapeType::OBB)
+				// 将AABB转换为OBB（轴为单位轴）
+				collision = CollisionDetector::checkOBBOBB(controlledWorldOBB, OBB::fromAABB(actor->getLocalAABB(), actor->getWorldMatrix()));
+            break;
 		case CollisionShapeType::Sphere:
 			if (controlledShape == CollisionShapeType::AABB)
 				collision = CollisionDetector::checkSphereAABB(actor->getWorldSphere(), controlledWorldAABB);
 			else if (controlledShape == CollisionShapeType::Sphere)
 				collision = CollisionDetector::checkSphereSphere(controlledWorldSphere, actor->getWorldSphere());
+			else if (controlledShape == CollisionShapeType::OBB)
+				collision = CollisionDetector::checkOBBSphere(controlledWorldOBB, actor->getWorldSphere());
+            break;
+		case CollisionShapeType::OBB:
+			if (controlledShape == CollisionShapeType::AABB)
+				collision = CollisionDetector::checkOBBOBB(OBB::fromAABB(controlledActor->getLocalAABB(), controlledActor->getWorldMatrix()), actor->getWorldOBB());
+			else if (controlledShape == CollisionShapeType::Sphere)
+				collision = CollisionDetector::checkOBBSphere(actor->getWorldOBB(), controlledWorldSphere);
+			else if (controlledShape == CollisionShapeType::OBB)
+				collision = CollisionDetector::checkOBBOBB(controlledWorldOBB, actor->getWorldOBB());
 			break;
 		default:
 			continue;

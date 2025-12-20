@@ -380,7 +380,7 @@ ContainerBlueActor::ContainerBlueActor()
 	//container->setWorldRotation(Vec3(0.f, PI / 2, 0.f));
 	container->SetWorldRotationRadian(Vec3(0.f, PI / 2, 0.f));
 	setCollidable(true);
-	setCollisionShapeType(CollisionShapeType::AABB);
+	setCollisionShapeType(CollisionShapeType::OBB);
 	calculateLocalCollisionShape();
 }
 

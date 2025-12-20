@@ -47,6 +47,7 @@ public:
 	const AABB& getLocalAABB() const { return m_localAABB; }
 	const Sphere& getLocalSphere() const { return m_localSphere; }
 
+
 	// 获取世界空间碰撞体（考虑Actor的位置/旋转/缩放）
 	virtual AABB getWorldAABB() const
 	{
@@ -63,6 +64,16 @@ public:
 			worldAABB.extend(worldV);
 		}
 		return worldAABB;
+	}
+
+	// 获取世界空间OBB（定向包围盒）
+	virtual OBB getWorldOBB() const
+	{
+		if (m_collisionShapeType != CollisionShapeType::OBB)
+			return OBB();
+
+		Matrix worldMat = getWorldMatrix();
+		return OBB::fromAABB(m_localAABB, worldMat);
 	}
 
 	virtual Sphere getWorldSphere() const
