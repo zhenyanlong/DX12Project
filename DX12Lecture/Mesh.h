@@ -222,9 +222,9 @@ class Mesh
 public:
 	enum class VertexType
 	{
-		Static,     // 静态顶点（STATIC_VERTEX）
-		Animated,   // 动画顶点（ANIMATED_VERTEX）
-		Unknown     // 未知类型（通用void*顶点，暂不支持）
+		Static,     // STATIC_VERTEX
+		Animated,   // ANIMATED_VERTEX
+		Unknown     
 	};
 
 	ID3D12Resource* vertexBuffer;
@@ -236,9 +236,9 @@ public:
 
 	//D3D12_INPUT_ELEMENT_DESC inputLayout[2];
 	//D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
-	std::vector<STATIC_VERTEX> m_staticVertices;    // 静态顶点数据
-	std::vector<ANIMATED_VERTEX> m_animatedVertices;// 动画顶点数据
-	VertexType m_vertexType = VertexType::Unknown;  // 当前顶点类型
+	std::vector<STATIC_VERTEX> m_staticVertices;    // STATIC_VERTEX data
+	std::vector<ANIMATED_VERTEX> m_animatedVertices;// ANIMATED_VERTEX data
+	VertexType m_vertexType = VertexType::Unknown;  
 	
 public:
 	void init(Core* core, void* vertices, int vertexSizeInBytes, int numVertices,
@@ -284,14 +284,14 @@ public:
 		v.tv = tv;
 		return v;
 	}
-	// ===== 新增：getVertices方法（返回所有顶点的位置）=====
+	// Return the positions of all vertices
 	std::vector<Vec3> getVertices() const
 	{
 		std::vector<Vec3> vertices;
 		switch (m_vertexType)
 		{
 		case VertexType::Static:
-			// 提取静态顶点的位置
+			
 			vertices.reserve(m_staticVertices.size());
 			for (const auto& v : m_staticVertices)
 			{
@@ -300,7 +300,7 @@ public:
 			break;
 
 		case VertexType::Animated:
-			// 提取动画顶点的位置
+			
 			vertices.reserve(m_animatedVertices.size());
 			for (const auto& v : m_animatedVertices)
 			{
@@ -309,21 +309,21 @@ public:
 			break;
 
 		case VertexType::Unknown:
-			// 通用void*顶点暂不支持（可根据需求扩展）
+			
 			std::cerr << "Mesh: Unknown vertex type, cannot get vertices!" << std::endl;
 			break;
 		}
 		return vertices;
 	}
 
-	// ===== 重载：获取经过模型矩阵变换后的世界空间顶点（可选，用于碰撞体的世界空间计算）=====
+	// Return the positions of all world space vertices
 	std::vector<Vec3> getVertices(Matrix& modelMatrix) const
 	{
 		std::vector<Vec3> vertices = getVertices();
-		// 将局部空间顶点变换到世界空间
+		
 		for (auto& v : vertices)
 		{
-			v = modelMatrix.mulPoint(v); // 假设Matrix类有transformPoint方法（点变换）
+			v = modelMatrix.mulPoint(v); 
 		}
 		return vertices;
 	}
@@ -431,7 +431,7 @@ public:
 	AnimatedModel(Core* core, std::string filename);
 	void CreateFromGEM(Core* core, std::string filename);
 private:
-	// ===== 新增：公共绘制逻辑（参考StaticMesh的drawCommon）=====
+	
 	void drawCommon(Core* core, PSOManager* psos, Pipelines* pipes, const std::string& pipeName,
 		AnimationInstance* instance, int instanceCount = 1);
 

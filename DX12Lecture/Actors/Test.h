@@ -1,5 +1,5 @@
-#pragma once
-class Test
-{
-};
+//#pragma once
+//class Test
+//{
+//};
 

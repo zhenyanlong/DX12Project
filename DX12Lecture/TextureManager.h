@@ -42,7 +42,7 @@ public:
 			return it->second;
 		}
 
-		// 加载新纹理并存储
+		// load new texture and save
 		auto texture = new Texture(core, filename);
 		
 		Texture* ptr = texture;

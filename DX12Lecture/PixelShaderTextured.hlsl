@@ -15,7 +15,7 @@ float4 PS(PS_INPUT input) : SV_Target0
     //colour = tex.Sample(samplerLinear, input.TexCoords);
     float3 linearRGB = pow(colour.rgb, 1.0 / 2.2);
     
-    // 提亮后转换回sRGB（输出到帧缓冲前）
+    
     //float3 sRGB = pow(linearRGB * 3, float3(1.0 / 2.2, 1.0 / 2.2, 1.0 / 2.2));
     if (colour.a < 0.5)
     {

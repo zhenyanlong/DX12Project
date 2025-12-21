@@ -18,13 +18,11 @@ Actor* Actor::CreateActorByClassName(const std::string& className) {
 	return nullptr;
 }
 
-// 基类公共数据序列化
+// Public data serialization of base class
 void Actor::SaveBase(std::ofstream& file) const {
-	// 保存ActorType（转为int）
 	int actorType = static_cast<int>(m_actorType);
 	file.write(reinterpret_cast<const char*>(&actorType), sizeof(int));
 
-	// 保存位置、旋转、缩放
 	Vec3 pos = getWorldPos();
 	file.write(reinterpret_cast<const char*>(&pos), sizeof(Vec3));
 	Vec3 rot = getWorldRotation();
@@ -32,24 +30,20 @@ void Actor::SaveBase(std::ofstream& file) const {
 	Vec3 scale = getWorldScale();
 	file.write(reinterpret_cast<const char*>(&scale), sizeof(Vec3));
 
-	// 保存碰撞相关
 	bool isCollidable = m_isCollidable;
 	file.write(reinterpret_cast<const char*>(&isCollidable), sizeof(bool));
 	int collisionShapeType = static_cast<int>(m_collisionShapeType);
 	file.write(reinterpret_cast<const char*>(&collisionShapeType), sizeof(int));
 
-	// 保存销毁状态
 	bool isDestroyed = m_isDestroyed;
 	file.write(reinterpret_cast<const char*>(&isDestroyed), sizeof(bool));
 }
 
 void Actor::LoadBase(std::ifstream& file) {
-	// 加载ActorType
 	int actorType;
 	file.read(reinterpret_cast<char*>(&actorType), sizeof(int));
 	m_actorType = static_cast<ActorType>(actorType);
 
-	// 加载位置、旋转、缩放
 	Vec3 pos, rot, scale;
 	file.read(reinterpret_cast<char*>(&pos), sizeof(Vec3));
 	setWorldPos(pos);
@@ -58,7 +52,6 @@ void Actor::LoadBase(std::ifstream& file) {
 	file.read(reinterpret_cast<char*>(&scale), sizeof(Vec3));
 	setWorldScale(scale);
 
-	// 加载碰撞相关
 	bool isCollidable;
 	file.read(reinterpret_cast<char*>(&isCollidable), sizeof(bool));
 	m_isCollidable = isCollidable;
@@ -66,7 +59,6 @@ void Actor::LoadBase(std::ifstream& file) {
 	file.read(reinterpret_cast<char*>(&collisionShapeType), sizeof(int));
 	m_collisionShapeType = static_cast<CollisionShapeType>(collisionShapeType);
 
-	// 加载销毁状态
 	bool isDestroyed;
 	file.read(reinterpret_cast<char*>(&isDestroyed), sizeof(bool));
 	m_isDestroyed = isDestroyed;
@@ -101,13 +93,7 @@ namespace {
 		}
 	} treeActorRegistrar;
 }
-//TreeActor::TreeActor()
-//{
-//	m_instanceCount = 0;
-//	m_transIncrement = Vec3(0.f,0.f,0.f);
-//	World* myWorld = World::Get();
-//	willow = new StaticMesh(myWorld->GetCore(), "Models/willow.gem");
-//}
+
 TreeActor::TreeActor(int count, Vec3 transIncrement)
 {
 	m_instanceCount = count;
@@ -115,8 +101,6 @@ TreeActor::TreeActor(int count, Vec3 transIncrement)
 
 	World* myWorld = World::Get();
 	willow = new StaticMesh(myWorld->GetCore(), "Models/willow.gem");
-	//willow->SetWorldScaling(Vec3(1.f, 1.f, 1.f));
-	// 生成50个实例的矩阵（分布在半径50的圆内，高度0~5）
 	generateInstanceMatrices(m_instanceCount, m_transIncrement);
 }
 
@@ -130,7 +114,6 @@ void TreeActor::generateInstanceMatrices(int count, Vec3 transIncrement)
 	{
 		float scale = 0.05f;
 		float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
-		//float transIncrement = 20.f;
 		Vec3 originPos = willow->GetWorldPos();
 
 		Matrix scaleMat = Matrix::scaling(Vec3(scale, scale, scale));
@@ -146,7 +129,6 @@ void TreeActor::draw()
 {
 	World* myWorld = World::Get();
 	
-	//willow->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 	willow->drawInstances(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_INSTANCE_LIGHT_PIPE, myWorld->GetPipelines(), &instanceMatrices, m_instanceCount);
 }
 
@@ -191,7 +173,6 @@ FPSActor::FPSActor()
 	m_actorType = ActorType::Player;
 	calculateLocalCollisionShape();
 
-	// 新增：初始化动画状态机
 	animStateMachine = new FPSAnimationStateMachine(fps_Mesh, animatedInstance);
 }
 
@@ -225,24 +206,23 @@ void FPSActor::updateRotation(Matrix rotMat)
 
 void FPSActor::updateWorldMatrix(Vec3 pos, float yaw, float pitch)
 {
-	/*Matrix rotation = Matrix::rotateY(m_yaw) * Matrix::rotateX(m_pitch);
-	return Matrix::translation(m_position) * rotation;*/
+
 }
 
 void FPSActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
+
 	if (!fps_Mesh)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
+
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto* mesh : fps_Mesh->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh->getVertices(); // 自定义方法，返回std::vector<Vec3>
+
+		auto vertices = mesh->getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -250,7 +230,6 @@ void FPSActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -261,7 +240,7 @@ void FPSActor::OnBeginPlay()
 void FPSActor::OnTick(float dt)
 {
 	if (animStateMachine) {
-		animStateMachine->Update(dt); // 调用状态机更新
+		animStateMachine->Update(dt); 
 	}
 }
 
@@ -280,7 +259,7 @@ BoxActor::BoxActor()
 	setCollidable(true);
 	setCollisionShapeType(CollisionShapeType::AABB);
 	box->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
-	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
+
 	calculateLocalCollisionShape();
 }
 
@@ -292,18 +271,15 @@ void BoxActor::draw()
 
 void BoxActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!box)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : box->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = mesh.getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -311,7 +287,6 @@ void BoxActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -342,18 +317,15 @@ void GroundActor::draw()
 
 void GroundActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!ground)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : ground->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = mesh.getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -361,7 +333,6 @@ void GroundActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -377,7 +348,7 @@ ContainerBlueActor::ContainerBlueActor()
 {
 	World* myWorld = World::Get();
 	container = new StaticMesh(myWorld->GetCore(), "Models/container_005.gem");
-	//container->setWorldRotation(Vec3(0.f, PI / 2, 0.f));
+
 	container->SetWorldRotationRadian(Vec3(0.f, PI / 2, 0.f));
 	setCollidable(true);
 	setCollisionShapeType(CollisionShapeType::OBB);
@@ -393,18 +364,15 @@ void ContainerBlueActor::draw()
 
 void ContainerBlueActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!container)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : container->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = mesh.getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -412,7 +380,6 @@ void ContainerBlueActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -431,7 +398,7 @@ BlockActor::BlockActor()
 	setCollidable(true);
 	setCollisionShapeType(CollisionShapeType::AABB);
 	box->SetWorldScaling(Vec3(0.1f, 0.1f, 0.1f));
-	//box->SetWorldScaling(Vec3(1.1f, 1.1f, 1.1f));
+
 	calculateLocalCollisionShape();
 }
 
@@ -444,18 +411,15 @@ void BlockActor::draw()
 
 void BlockActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!box)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : box->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = mesh.getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -463,7 +427,6 @@ void BlockActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -501,7 +464,7 @@ void ObstacleActor::generateInstanceMatrices(int count, Vec3 offset)
 	{
 		Vec3 scale = obstacle->GetWorldScale();
 		Vec3 rot = obstacle->GetWorldRotationRadian();
-		//float rotY = (float)rand() / RAND_MAX * 2 * M_PI;
+
 		float transIncrement = 20.f;
 		Vec3 originPos = obstacle->GetWorldPos();
 
@@ -526,15 +489,15 @@ void ObstacleActor::calculateLocalCollisionShape()
 }
 
 namespace {
-	// 注册GeneralMeshActor到Actor工厂
+
 	struct GeneralMeshActorRegistrar {
 		GeneralMeshActorRegistrar() {
 			Actor::RegisterActor("GeneralMeshActor", []() {
-				// 创建无参实例（加载时会调用Load方法初始化路径）
+				
 				return new GeneralMeshActor();
 				});
 		}
-	} generalMeshActorRegistrar; // 全局变量，程序启动时自动执行构造函数
+	} generalMeshActorRegistrar; 
 }
 
 GeneralMeshActor::GeneralMeshActor(std::string path)
@@ -545,23 +508,20 @@ GeneralMeshActor::GeneralMeshActor(std::string path)
 void GeneralMeshActor::draw()
 {
 	World* myWorld = World::Get();
-	mesh->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_LIGHT_PIPE, myWorld->GetPipelines());
+	mesh->draw(myWorld->GetCore(), myWorld->GetPSOManager(), STATIC_PIPE, myWorld->GetPipelines());
 }
 
 void GeneralMeshActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!mesh)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto submesh : mesh->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = submesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = submesh.getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -569,7 +529,6 @@ void GeneralMeshActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -577,13 +536,13 @@ void GeneralMeshActor::initMesh(const std::string& path)
 {
 	m_path = path;
 
-	// 释放旧的mesh（防止内存泄漏）
+	// Release the old mesh
 	if (mesh) {
 		delete mesh;
 		mesh = nullptr;
 	}
 
-	// 重新创建mesh
+	// Recreate the mesh
 	World* myWorld = World::Get();
 	mesh = new StaticMesh(myWorld->GetCore(), path);
 	setCollidable(true);
@@ -592,31 +551,21 @@ void GeneralMeshActor::initMesh(const std::string& path)
 	calculateLocalCollisionShape();
 }
 
-//namespace {
-//	// 注册GeneralMeshActor到Actor工厂
-//	struct GeneralMeshActorRegistrar {
-//		GeneralMeshActorRegistrar() {
-//			Actor::RegisterActor("GeneralMeshActor", []() {
-//				// 创建无参实例（加载时会调用Load方法初始化路径）
-//				return new GeneralMeshActor();
-//				});
-//		}
-//	} generalMeshActorRegistrar; // 全局变量，程序启动时自动执行构造函数
-//}
+
 
 void BulletActor::OnTick(float dt)
 {
 	World* myWorld = World::Get();
-	// 1. 更新生命周期，超时销毁
+	// Update the lifecycle, automatically destroy upon timeout
 	m_lifeTime += dt;
 	if (m_lifeTime >= MAX_LIFE_TIME) {
 		Destroy();
 		return;
 	}
 
-	// 2. 移动子弹
+	// move
 	setWorldPos(getWorldPos() + m_direction * m_speed * dt);
-
+	// check collision
 	calculateLocalCollisionShape();
 	auto collidableActors = myWorld->getCollidableActors();
 	std::vector<Actor*> collisions = CollisionResolver::CheckCollision(this, collidableActors);
@@ -668,18 +617,15 @@ void BulletActor::draw()
 
 void BulletActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!m_bulletMesh)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto mesh : m_bulletMesh->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh.getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = mesh.getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -687,7 +633,6 @@ void BulletActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -711,7 +656,6 @@ EnemyActor::EnemyActor()
 	m_actorType = ActorType::Enemy;
 	calculateLocalCollisionShape();
 
-	// 新增：初始化动画状态机
 	animStateMachine = new EnemyAnimationStateMachine(enemy_Mesh, animatedInstance);
 }
 
@@ -730,18 +674,15 @@ void EnemyActor::draw()
 
 void EnemyActor::calculateLocalCollisionShape()
 {
-	// 从Mesh计算局部碰撞体（示例：用Mesh顶点扩展AABB/Sphere）
 	if (!enemy_Mesh)
 		return;
 
-	// 遍历Mesh顶点，扩展局部AABB和Sphere
 	m_localAABB.reset();
 	m_localSphere = Sphere(Vec3(0, 0, 0), 0.0f);
 
 	for (auto* mesh : enemy_Mesh->meshes)
 	{
-		// 假设Mesh有获取顶点的方法（需根据实际代码调整）
-		auto vertices = mesh->getVertices(); // 自定义方法，返回std::vector<Vec3>
+		auto vertices = mesh->getVertices(); 
 		for (const auto& v : vertices)
 		{
 			m_localAABB.extend(v);
@@ -749,7 +690,6 @@ void EnemyActor::calculateLocalCollisionShape()
 		}
 	}
 
-	// 调整Sphere中心（与AABB中心一致）
 	m_localSphere.centre = m_localAABB.getCenter();
 }
 
@@ -760,7 +700,7 @@ void EnemyActor::OnBeginPlay()
 void EnemyActor::OnTick(float dt)
 {
 	if (animStateMachine) {
-		animStateMachine->Update(dt); // 调用状态机更新
+		animStateMachine->Update(dt); 
 	}
 	if (animStateMachine->IsDeathFinished())
 	{

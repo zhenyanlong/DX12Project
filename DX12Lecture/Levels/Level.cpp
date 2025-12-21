@@ -140,38 +140,27 @@ bool Level::SaveLevel(const std::string& filePath) {
 		return false;
 	}
 
-	//// 1. 写入文件标识（4字节："LVL1"）
-	//char signature[] = { 'L', 'V', 'L', '1' };
-	//file.write(signature, sizeof(signature));
+	
 
-	//// 2. 写入版本号（int，1）
-	//int version = 1;
-	//file.write(reinterpret_cast<const char*>(&version), sizeof(int));
 
-	// 3. 写入出生点
 	file.write(reinterpret_cast<const char*>(&m_spawnPoint), sizeof(Vec3));
 
-	// 4. 写入Actor数量
 	int actorCount = static_cast<int>(m_actors.size());
 	file.write(reinterpret_cast<const char*>(&actorCount), sizeof(int));
 
-	// 5. 遍历Actor写入数据
 	for (const auto& pair : m_actors) {
 		const std::string& actorName = pair.first;
 		Actor* actor = pair.second;
 
-		// 5.1 写入Actor名称（长度+内容）
 		int nameLen = static_cast<int>(actorName.size());
 		file.write(reinterpret_cast<const char*>(&nameLen), sizeof(int));
 		file.write(actorName.c_str(), nameLen);
 
-		// 5.2 写入Actor类名（长度+内容）
 		std::string className = actor->GetClassName();
 		int classLen = static_cast<int>(className.size());
 		file.write(reinterpret_cast<const char*>(&classLen), sizeof(int));
 		file.write(className.c_str(), classLen);
 
-		// 5.3 写入Actor数据
 		actor->Save(file);
 	}
 
@@ -185,59 +174,36 @@ bool Level::LoadLevel(const std::string& filePath) {
 		return false;
 	}
 
-	//// 1. 验证文件标识
-	//char signature[4];
-	//file.read(signature, sizeof(signature));
-	//if (signature[0] != 'L' || signature[1] != 'V' || signature[2] != 'L' || signature[3] != '1') {
-	//	file.close();
-	//	return false;
-	//}
 
-	//// 2. 验证版本号
-	//int version;
-	//file.read(reinterpret_cast<char*>(&version), sizeof(int));
-	//if (version != 1) {
-	//	file.close();
-	//	return false;
-	//}
 
-	// 3. 读取出生点
 	file.read(reinterpret_cast<char*>(&m_spawnPoint), sizeof(Vec3));
 
-	// 4. 读取Actor数量
 	int actorCount;
 	file.read(reinterpret_cast<char*>(&actorCount), sizeof(int));
 
-	// 5. 清空现有Actor
 	for (auto& pair : m_actors) {
 		delete pair.second;
 	}
 	m_actors.clear();
 
-	// 6. 加载每个Actor
 	for (int i = 0; i < actorCount; ++i) {
-		// 6.1 读取Actor名称
 		int nameLen;
 		file.read(reinterpret_cast<char*>(&nameLen), sizeof(int));
 		std::string actorName(nameLen, '\0');
 		file.read(&actorName[0], nameLen);
 
-		// 6.2 读取Actor类名
 		int classLen;
 		file.read(reinterpret_cast<char*>(&classLen), sizeof(int));
 		std::string className(classLen, '\0');
 		file.read(&className[0], classLen);
 
-		// 6.3 创建Actor实例
 		Actor* actor = Actor::CreateActorByClassName(className);
 		if (!actor) {
-			continue; // 类名不存在，跳过
+			continue;
 		}
 
-		// 6.4 加载Actor数据
 		actor->Load(file);
 
-		// 6.5 添加到Level
 		m_actors[actorName] = actor;
 	}
 

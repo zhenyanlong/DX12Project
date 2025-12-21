@@ -1,5 +1,5 @@
 #pragma once
-#include <cmath>  // 包含sqrtf、max等数学函数
+#include <cmath>  
 #include <iostream>
 #include <filesystem>
 #include <string_view>
@@ -68,11 +68,11 @@ public:
 
 
 	//Vec4(const Vec3& vec3, float _w = 1.0f)
-	//	: v{ vec3.x, vec3.y, vec3.z, _w }  // 从Vec3扩展（默认w=1，适合齐次坐标点）
+	//	: v{ vec3.x, vec3.y, vec3.z, _w } 
 	//{
 	//}
 
-	// 加法运算
+
 	Vec4 operator+(const Vec4& pVec) const
 	{
 		return Vec4(x + pVec.x, y + pVec.y, z + pVec.z, w + pVec.w);
@@ -87,7 +87,7 @@ public:
 		return *this;
 	}
 
-	// 乘法运算（分量乘、标量乘）
+
 	Vec4 operator*(const Vec4& pVec) const
 	{
 		return Vec4(x * pVec.x, y * pVec.y, z * pVec.z, w * pVec.w);
@@ -98,7 +98,7 @@ public:
 		return Vec4(x * val, y * val, z * val, w * val);
 	}
 
-	// 除法运算（分量除、标量除）
+
 	Vec4 operator/(const Vec4& pVec) const
 	{
 		return Vec4(x / pVec.x, y / pVec.y, z / pVec.z, w / pVec.w);
@@ -127,7 +127,6 @@ public:
 		return *this;
 	}
 
-	// 负号运算（分量取反）
 	Vec4 operator-() const
 	{
 		return Vec4(-x, -y, -z, -w);
@@ -137,7 +136,6 @@ public:
 		return Vec4(x - v.x, y - v.y, z - v.z, w - v.w);
 	}
 
-	// 减法运算（复合赋值）
 	Vec4& operator-=(const Vec4& pVec)
 	{
 		x -= pVec.x;
@@ -147,22 +145,22 @@ public:
 		return *this;
 	}
 
-	// 长度平方（减少开方开销）
+
 	float LengthSQ()
 	{
 		return SQ(x) + SQ(y) + SQ(z) + SQ(w);
 	}
 
-	// 长度（模长）
+
 	float Length() const
 	{
 		return std::sqrt(x * x + y * y + z * z + w * w);
 	}
 
-	// 归一化（返回新向量，不修改原向量）
+	
 	
 
-	// 归一化（修改原向量，返回原长度）
+	
 	float normalize_GetLength()
 	{
 		float length = sqrtf(x * x + y * y + z * z + w * w);
@@ -177,10 +175,10 @@ public:
 	
 
 	
-	//叉积
+	//cross
 	static Vec4 Cross(const Vec4& a, const Vec4& b)
 	{
-		// 3D叉乘（忽略w分量）
+		
 		return Vec4(
 			a.y * b.z - a.z * b.y,
 			a.z * b.x - a.x * b.z,
@@ -202,12 +200,12 @@ public:
 
 	//void Normalize()
 	//{
-	//	// 点无意义
+	//	
 	//    if (w != 0.f)
 	//    {
 	//		return;
 	//    }
-	//	// 如果是方向
+	//	
 	//	float length = sqrtf(x * x + y * y + z * z + w * w);
 
 	//	if (length == 0.f)
@@ -534,7 +532,7 @@ public:
 		);
 	}
 
-	// ===== 新增：矩阵线性插值（逐元素插值）=====
+	
 	static Matrix lerp(const Matrix& a, const Matrix& b, float t)
 	{
 		Matrix result;
@@ -547,23 +545,23 @@ public:
 	}
 };
 
-// 简化矩阵乘法运算符（可选）
+
 //Matrix operator*(const Matrix& a, const Matrix& b) { return a.mul(b); }
 //Vec4 operator*(const Matrix& a, const Vec4& b) { return a.mul(b); }
 struct Colour
 {
 	float r, g, b;
 
-	Colour() : r(0.0f), g(0.0f), b(0.0f) {}  // 默认构造，初始化为(0,0)
-	Colour(float x_, float y_, float z_) : r(x_), g(y_), b(z_) {}  // 带参数构造，指定x和y
+	Colour() : r(0.0f), g(0.0f), b(0.0f) {}  
+	Colour(float x_, float y_, float z_) : r(x_), g(y_), b(z_) {}  
 
-	// 重载乘法运算符：Color * float（分量分别乘以标量）
+	// Color * float
 	Colour operator*(float scalar) const
 	{
 		return { r * scalar, g * scalar, b * scalar };
 	}
 
-	// 重载加法运算符：Color + Color（分量分别相加）
+	// Color + Color
 	Colour operator+(const Colour& other) const
 	{
 		return { r + other.r, g + other.g, b + other.b };
@@ -719,42 +717,42 @@ public:
 		Quaternion q;
 		float halfAngle = angle * 0.5f;
 		float sinHalf = sinf(halfAngle);
-		// 归一化轴向量（防止传入非单位向量）
+		
 		axis = axis.normalize();
 		q.a = axis.x * sinHalf;
 		q.b = axis.y * sinHalf;
 		q.c = axis.z * sinHalf;
 		q.d = cosf(halfAngle);
-		q.Normalize(); // 确保四元数是单位四元数
+		q.Normalize(); 
 		return q;
 	}
 
-	// 快捷方法：绕X轴旋转的四元数（局部X轴）
+	
 	static Quaternion fromXRotation(float angle)
 	{
 		return fromAxisAngle(Vec3(1.0f, 0.0f, 0.0f), angle);
 	}
 
-	// 快捷方法：绕Y轴旋转的四元数（世界/局部Y轴）
+	
 	static Quaternion fromYRotation(float angle)
 	{
 		return fromAxisAngle(Vec3(0.0f, 1.0f, 0.0f), angle);
 	}
 
-	// 快捷方法：绕Z轴旋转的四元数
+	
 	static Quaternion fromZRotation(float angle)
 	{
 		return fromAxisAngle(Vec3(0.0f, 0.0f, 1.0f), angle);
 	}
 
-	// ===== 新增：四元数转欧拉角（可选，用于调试）=====
+	
 	Vec3 toEulerAngles()
 	{
 		Vec3 angles;
-		// 俯仰（X轴）
+		// pitch
 		float sinPitch = 2.0f * (d * a - c * b);
 		angles.x = asinf(clamp(sinPitch, -1.0f, 1.0f));
-		// 偏航（Y轴）和滚转（Z轴）
+		// yaw and roll
 		if (fabs(sinPitch) < 0.9999f)
 		{
 			angles.y = atan2f(2.0f * (a * b + d * c), d * d - a * a - b * b + c * c);

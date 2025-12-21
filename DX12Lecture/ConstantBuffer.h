@@ -57,7 +57,7 @@ public:
 		}
 	}
 
-	static std::map<std::string, UINT> RegisterToRootIndex; // È«¾ÖÓ³Éä±í£ºregister(bX) ¡ú root index
+	static std::map<std::string, UINT> RegisterToRootIndex; // buffer -> root index 
 
 	static std::vector<ConstantBuffer> reflect(Core* core, ID3DBlob* shader, std::map<std::string, int>* const textureBindPoints = nullptr)
 	{

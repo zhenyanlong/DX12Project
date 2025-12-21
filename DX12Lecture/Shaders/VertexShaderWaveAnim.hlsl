@@ -1,15 +1,15 @@
 struct GerstnerWave
 {
-    float directionX; // 波的传播方向（归一化）
+    float directionX; 
     float directionY;
-    float amplitude; // 振幅（波高，可关联波长：amplitude = steepness * wavelength / (2π)，更物理）
-    float wavelength; // 波长（替代原frequency，频率由波长计算）
-    float phaseOffset; // 相位偏移（随机，避免波同步）
-    float steepness; // 陡度（控制波的卷曲程度，0~1）
-    float padding[2]; // 内存对齐
+    float amplitude;  
+    float wavelength; 
+    float phaseOffset; 
+    float steepness; 
+    float padding[2]; 
 };
 
-// ===== 新增：水面常量缓冲区（register(b3)，需对应根签名的新索引）=====
+
 
 
 cbuffer staticMeshBuffer : register(b0)
@@ -20,64 +20,63 @@ cbuffer staticMeshBuffer : register(b0)
 cbuffer WaterBuffer : register(b3)
 {
     GerstnerWave waves[16];
-    // 自动配置参数
-    int waveCount; // 实际使用的波数量（如8、12）
-    float wavelengthMin; // 波长最小值
-    float wavelengthMax; // 波长最大值
-    float steepnessMin; // 陡度最小值
-    float steepnessMax; // 陡度最大值
-    float2 baseDirection; // 基础方向（如(1,0)，波的主要传播方向）
-    float randomDirection; // 方向随机度（0~1，0=完全沿基础方向，1=完全随机）
-    float time; // 时间（用于相位更新）
-    float scale; // 水面缩放系数
+    // Automatic configuration parameters
+    int waveCount; // wave count
+    float wavelengthMin; // Min wave length
+    float wavelengthMax; // Max wave length
+    float steepnessMin; // Min steepness
+    float steepnessMax; // Max steepness
+    float2 baseDirection; // main direction
+    float randomDirection; // 0 = Completely along the main direction，1 = Completely random
+    float time; 
+    float scale; 
     float waveHeightGain; // wave height scale
-    int seed; // 随机数种子（避免每次运行波的方向都一样）
-    float padding; // 内存对齐（保证16字节对齐）
+    int seed; // random seed
+    float padding; 
 };
 float Random(float seed)
 {
-    // dot(seed向量, 固定向量) → 正弦值 → 小数部分 → 映射到[-1,1]
+    // dot(seed vector, fixed vector) → sine value → fractional part → mapped to [-1, 1]
     return frac(sin(dot(float2(seed, 2.0), float2(12.9898, 78.233))) * 43758.5453) * 2.0 - 1.0;
 }
 
 void ComputeGerstnerWaves(float3 inputPos, out float3 outputPos, out float3 outputNormal)
 {
-    // 初始位置：水面平面的x-z坐标（y=0），缩放系数调整范围
+    // init pos
     float2 pos = inputPos.xz * scale;
     outputPos = inputPos;
-    float3 normal = float3(0.0, 1.0, 0.0); // 初始法线（向上）
+    float3 normal = float3(0.0, 1.0, 0.0); 
 
-    // 限制波的数量（避免超出数组范围）
+    // clamp wave count
     int actualWaveCount = min(waveCount, 16);
 
-    // 叠加多个波（自动计算每个波的参数）
+    // overlay multiple waves（Automatically calculate the parameters of each wave）
     for (int i = 0; i < actualWaveCount; i++)
     {
-        // ===== 步骤1：计算当前波的插值因子step（0~1）=====
-        float step = (float) i / (float) (actualWaveCount - 1); // 从0到1均匀分布（避免最后一个波参数极端）
-        // 若需要更非线性的分布，可对step做曲线映射（如step = pow(step, 1.5)）
+        
+        float step = (float) i / (float) (actualWaveCount - 1); 
+        
 
-        // ===== 步骤2：线性插值波长和陡度 =====
+        
         float wavelength = lerp(wavelengthMin, wavelengthMax, step);
         float steepness = lerp(steepnessMin, steepnessMax, step);
 
-        // ===== 步骤3：生成随机方向（结合基础方向和随机度）=====
-        // 随机数种子：用i + seed避免每次运行波的方向一致
+        // spawn random direction
         float randomSeedX = (float) (i + seed);
         float randomSeedY = (float) (2 * (i + seed));
         float2 randomDir = float2(Random(randomSeedX), Random(randomSeedY));
-        randomDir = normalize(randomDir); // 归一化随机方向
-        // 线性插值：基础方向 ←→ 随机方向（由randomDirection控制）
+        randomDir = normalize(randomDir); 
+        
         float2 baseDir = normalize(baseDirection);
         float2 dir = normalize(lerp(baseDir, randomDir, randomDirection));
 
-        // ===== 步骤4：计算波的物理参数 =====
-        float frequency = 2.0 * 3.1415926535 / wavelength; // 频率 = 2π/波长
-        float amplitude = steepness * wavelength / (2.0 * 3.1415926535); // 振幅与波长关联（避免波过高）
-        // 相位：时间*频率 + 随机相位偏移（让波的起始位置不一样）
+        
+        float frequency = 2.0 * 3.1415926535 / wavelength; 
+        float amplitude = steepness * wavelength / (2.0 * 3.1415926535); 
+        
         float phase = time * frequency + Random((float) (3 * (i + seed))) * 2.0 * 3.1415926535;
 
-        // ===== 步骤5：Gerstner波核心计算（与原有逻辑一致）=====
+        // Gerstner wave calculation
         if (amplitude < 1e-6)
             continue;
 
@@ -85,21 +84,21 @@ void ComputeGerstnerWaves(float3 inputPos, out float3 outputPos, out float3 outp
         float cosTheta = cos(theta);
         float sinTheta = sin(theta);
 
-        // 顶点位置扰动
+        // modify vertex position
         float2 horzDisplacement = steepness * amplitude * dir * cosTheta / frequency;
         float vertDisplacement = amplitude * sinTheta * waveHeightGain;
         outputPos.x += horzDisplacement.x;
         outputPos.z += horzDisplacement.y;
         outputPos.y += vertDisplacement;
 
-        // 法线扰动
+        // modify normal
         float dHdx = amplitude * frequency * dir.x * cosTheta;
         float dHdz = amplitude * frequency * dir.y * cosTheta;
         normal.x -= steepness * dHdx;
         normal.z -= steepness * dHdz;
     }
 
-    // 归一化法线
+    // normalize
     outputNormal = normalize(normal);
 }
 
@@ -119,7 +118,7 @@ struct PS_INPUT
     float3 WorldNormal : NORMAL;
     float3 WorldTangent : TANGENT;
     float3 WorldBitangent : BITANGENT;
-    float3 WorldPos : WORLDPOS; // 新增：世界位置（用于水面计算）
+    float3 WorldPos : WORLDPOS; 
 };
 
 float3x3 Inverse3x3(float3x3 m)
@@ -148,24 +147,24 @@ PS_INPUT VS(VS_INPUT input)
     worldMatrix = W;
     
 
-    // ===== 核心：Gerstner波顶点动画 =====
-    float3 localPos = input.Pos.xyz; // 本地平面顶点位置
+
+    float3 localPos = input.Pos.xyz; 
     float3 localNormal;
     float3 outLocalPos;
-    ComputeGerstnerWaves(localPos, outLocalPos, localNormal); // 扰动位置和法线
+    ComputeGerstnerWaves(localPos, outLocalPos, localNormal); 
 
-    // 本地→世界空间
+
     float4 worldPos = mul(float4(outLocalPos, 1.0), worldMatrix);
-    output.Pos = mul(worldPos, VP); // 世界→裁剪空间
+    output.Pos = mul(worldPos, VP); 
     output.WorldPos = worldPos.xyz;
 
-    // 法线/切线的世界空间变换（使用扰动后的本地法线）
+
     float3x3 normalMatrix = transpose(Inverse3x3((float3x3) worldMatrix));
     output.WorldNormal = normalize(mul(localNormal, normalMatrix));
     output.WorldTangent = normalize(mul(input.Tangent, normalMatrix));
     output.TexCoords = input.TexCoords;
 
-    // 副切线计算（保留原有逻辑）
+
     output.WorldBitangent = normalize(cross(output.WorldNormal, output.WorldTangent) * 1.0f);
 
     return output;

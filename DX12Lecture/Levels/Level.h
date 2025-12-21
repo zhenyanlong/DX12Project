@@ -10,7 +10,7 @@ class Level
 {
 protected:
 	std::map<std::string, Actor*> m_actors;
-	Vec3 m_spawnPoint = Vec3(40.0f, 15.0f, 0.0f); // 出生点（默认值）
+	Vec3 m_spawnPoint = Vec3(40.0f, 15.0f, 0.0f); // spawn point
 
 public:
 	// construct
@@ -66,10 +66,10 @@ public:
 				return pair.second == actor;
 			});
 		if (it != m_actors.end()) {
-			delete it->second;  // 先删除对象
+			delete it->second;  
 			it->second = nullptr;
 
-			// 从map中移除元素
+			
 			m_actors.erase(it);
 
 			
@@ -79,13 +79,13 @@ public:
 	void garbageColloection()
 	{
 		
-		for (auto it = m_actors.begin(); it != m_actors.end(); /* 这里不递增 */) {
+		for (auto it = m_actors.begin(); it != m_actors.end(); ) {
 			if (it->second && it->second->getIsDestroyed()) {
-				// 如果map拥有所有权，先删除对象
+				
 				delete it->second;
 				it->second = nullptr;
 
-				// 从map中删除，并获取下一个迭代器
+				
 				it = m_actors.erase(it);
 			}
 			else {
@@ -112,11 +112,11 @@ public:
 	virtual void draw() = 0;
 
 	public:
-		// 出生点相关
+		
 		void SetSpawnPoint(const Vec3& pos) { m_spawnPoint = pos; }
 		Vec3 GetSpawnPoint() const { return m_spawnPoint; }
 
-		// 关卡保存/加载
+		
 		virtual bool SaveLevel(const std::string& filePath);
 		virtual bool LoadLevel(const std::string& filePath);
 };

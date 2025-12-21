@@ -35,7 +35,7 @@ public:
 	}
 };
 
-const std::string STATIC_PIPE = "Static_Mesh";	// 基础：StaticMesh
+const std::string STATIC_PIPE = "Static_Mesh";	// StaticMesh
 const std::string STATIC_LIGHT_PIPE = "Static_Mesh_Light";	// StaticMesh + Light
 const std::string STATIC_INSTANCE_PIPE = "Static_Instance";	// StaticMesh + Instance
 const std::string ANIM_PIPE = "Animation";	// Animation
@@ -133,7 +133,7 @@ public:
 	}
 
 
-	// 新增：添加Actor到世界
+	
 	void addActor(std::string name, Actor* actor)
 	{
 		SingleInstance->GetLevel()->AddActor(name, actor);
@@ -142,7 +142,7 @@ public:
 	void garbageCollection() {
 		SingleInstance->GetLevel()->garbageColloection();
 	}
-	// 新增：获取所有可碰撞Actor
+	
 	std::vector<Actor*> getCollidableActors() const
 	{
 		std::vector<Actor*> collidable;

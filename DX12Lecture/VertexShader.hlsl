@@ -41,8 +41,8 @@ float3x3 Inverse3x3(float3x3 m)
 PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
-    float4 worldPos = mul(input.Pos,W); // 局部->世界（HLSL：float4 * float4x4 = 列向量*矩阵）
-    output.Pos = mul(worldPos,VP); // 世界->裁剪（VP=View*Proj）
+    float4 worldPos = mul(input.Pos,W); 
+    output.Pos = mul(worldPos,VP); 
     //output.Pos = output.Pos / output.Pos.w;
     float3x3 normalMatrix = transpose(Inverse3x3((float3x3) W));
     output.Normal = mul(input.Normal, normalMatrix);

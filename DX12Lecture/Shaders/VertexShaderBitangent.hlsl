@@ -43,16 +43,16 @@ PS_INPUT VS(VS_INPUT input)
 {
     PS_INPUT output;
     
-    // 顶点位置变换
+    
     float4 worldPos = mul(input.Pos, W);
     output.Pos = mul(worldPos, VP);
     output.TexCoords = input.TexCoords;
     
-    // 转换法线、切线到世界空间（逆转置矩阵避免缩放失真）
+
     float3x3 normalMatrix = transpose(Inverse3x3((float3x3) W));
     output.Normal = normalize(mul(input.Normal, normalMatrix));
     output.Tangent = normalize(mul(input.Tangent, normalMatrix));
-    // 副切线：法线×切线，考虑Tangent.w的手性
+
     output.Bitangent = normalize(cross(output.Normal, output.Tangent) * 1.0f);
 
     return output;

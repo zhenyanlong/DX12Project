@@ -7,21 +7,21 @@ Vec3 CollisionResolver::resolveSlidingCollision(Actor* const controlledActor, co
         return Vec3(0, 0, 0);
 
     Vec3 remainingMove = desiredMove;
-    const int maxIterations = 3; // 增加迭代次数，处理多碰撞
-    Vec3 currentPos = controlledActor->getWorldPos(); // 仅读取，不修改
+    const int maxIterations = 3; // max Iteration count
+    Vec3 currentPos = controlledActor->getWorldPos(); 
 
     for (int i = 0; i < maxIterations; i++)
     {
         if (remainingMove.lengthSq() < epsilon * epsilon)
             break;
 
-        // ===== 步骤1：收集所有碰撞的结果 =====
+        // Collect all the results of the collisions
         std::vector<CollisionResult> allCollisions;
         CollisionShapeType controlledShape = controlledActor->getCollisionShapeType();
 
-        // 临时计算测试位置（当前位置 + 剩余移动）
+        
         Vec3 testPos = currentPos + remainingMove;
-        controlledActor->setWorldPos(testPos); // 临时设置用于碰撞检测
+        controlledActor->setWorldPos(testPos); 
         auto controlledWorldAABB = controlledActor->getWorldAABB();
         auto controlledWorldSphere = controlledActor->getWorldSphere();
         auto controlledWorldOBB = controlledActor->getWorldOBB();
@@ -40,7 +40,7 @@ Vec3 CollisionResolver::resolveSlidingCollision(Actor* const controlledActor, co
                 else if (controlledShape == CollisionShapeType::Sphere)
                     collision = CollisionDetector::checkSphereAABB(controlledWorldSphere, actor->getWorldAABB());
 				else if (controlledShape == CollisionShapeType::OBB)
-					// 将AABB转换为OBB（轴为单位轴）
+					
 					collision = CollisionDetector::checkOBBOBB(controlledWorldOBB, OBB::fromAABB(actor->getLocalAABB(), actor->getWorldMatrix()));
                 break;
             case CollisionShapeType::Sphere:
@@ -63,7 +63,7 @@ Vec3 CollisionResolver::resolveSlidingCollision(Actor* const controlledActor, co
                 continue;
             }
 
-            // 收集有效碰撞并修正法向量方向
+            // Collect effective collisions
             if (collision.isColliding)
             {
                 Vec3 dirFromCollider = testPos - actor->getWorldPos();
@@ -75,38 +75,38 @@ Vec3 CollisionResolver::resolveSlidingCollision(Actor* const controlledActor, co
             }
         }
 
-        // 恢复位置（仅临时用于检测，不修改实际位置）
+        
         controlledActor->setWorldPos(currentPos);
 
-        // ===== 步骤2：无碰撞时直接返回剩余移动 =====
+        
         if (allCollisions.empty())
         {
-            return remainingMove; // 关键：无碰撞时返回原始移动向量
+            return remainingMove; 
         }
 
-        // ===== 步骤3：合并所有碰撞的法向量 =====
+        // Merge all the normal vectors of the collisions
         Vec3 combinedNormal = Vec3(0, 0, 0);
         for (const auto& col : allCollisions)
         {
             combinedNormal += col.normal * (col.penetration + epsilon);
         }
-        if (combinedNormal.lengthSq() > epsilon * epsilon)
-        {
-            combinedNormal = combinedNormal.normalize();
-        }
-        else
-        {
-            combinedNormal = allCollisions[0].normal;
-        }
+		if (combinedNormal.lengthSq() > epsilon * epsilon)
+		{
+			combinedNormal = combinedNormal.normalize();
+		}
+		else
+		{
+			combinedNormal = allCollisions[0].normal;
+		}
 
-        // ===== 步骤4：分解移动向量 =====
+        // Decompose the moving vector
         float dotProduct = Dot(remainingMove, combinedNormal);
         if (dotProduct < 0)
         {
             remainingMove = remainingMove - combinedNormal * dotProduct;
         }
 
-        // ===== 步骤5：限制移动长度 =====
+        
         float maxMoveLength = desiredMove.length() * 1.5f;
 		if (remainingMove.length() > maxMoveLength)
 		{
@@ -141,7 +141,7 @@ std::vector<Actor*> CollisionResolver::CheckCollision(Actor* const controlledAct
 			else if (controlledShape == CollisionShapeType::Sphere)
 				collision = CollisionDetector::checkSphereAABB(controlledWorldSphere, actor->getWorldAABB());
 			else if (controlledShape == CollisionShapeType::OBB)
-				// 将AABB转换为OBB（轴为单位轴）
+				
 				collision = CollisionDetector::checkOBBOBB(controlledWorldOBB, OBB::fromAABB(actor->getLocalAABB(), actor->getWorldMatrix()));
             break;
 		case CollisionShapeType::Sphere:

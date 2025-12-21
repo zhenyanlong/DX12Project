@@ -14,11 +14,11 @@ private:
 public:
 	EnemyAnimationStateMachine(AnimatedModel* model, AnimationInstance* instance)
 		: AnimationStateMachine(model, instance) {
-		// ×¢²áËùÓÐ×´Ì¬
+		// register all states
 		RegisterState(new DuckIdlestate(this));
 		RegisterState(new DuckDeathState(this));
 		
-		// ³õÊ¼×´Ì¬£ºIdle
+		// init Idle state
 		ChangeState("Idle");
 	}
 

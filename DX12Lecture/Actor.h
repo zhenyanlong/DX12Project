@@ -12,10 +12,10 @@
 
 enum class ActorType {
 	None,
-	Player,        // 玩家
-	Bullet,     // 子弹
-	Enemy,      // 敌人
-	Static      // 静态场景物体（如墙壁）
+	Player,        
+	Bullet,     
+	Enemy,      
+	Static      
 };
 class Actor	: public GeneralEvent
 {
@@ -23,19 +23,19 @@ class Actor	: public GeneralEvent
 	// collision system
 protected:
 	CollisionShapeType m_collisionShapeType = CollisionShapeType::None;
-	AABB m_localAABB;       // 局部空间AABB（相对于Actor原点）
-	Sphere m_localSphere;   // 局部空间Sphere（相对于Actor原点）
-	bool m_isCollidable = false; // 是否可碰撞
-	// Actor类型（用于碰撞区分）
+	AABB m_localAABB;       
+	Sphere m_localSphere;   
+	bool m_isCollidable = false; 
+	// Actor type
 	ActorType m_actorType;
-	// 是否标记为销毁（World统一清理）
+	
 	bool m_isDestroyed;
 public:
 	Actor() : m_actorType(ActorType::Static), m_isDestroyed(false) {};
 	virtual ~Actor() = default;
-	//virtual void draw() = 0;
+	
 
-	// 碰撞体配置接口
+	// collision api
 	void setCollidable(bool enable) { m_isCollidable = enable; }
 	bool isCollidable() const { return m_isCollidable; }
 	void setCollisionShapeType(CollisionShapeType type) { m_collisionShapeType = type; }
@@ -43,12 +43,12 @@ public:
 	ActorType getActorType() const { return m_actorType; }
 	bool getIsDestroyed() const { return m_isDestroyed; }
 
-	// 获取局部碰撞体
+	
 	const AABB& getLocalAABB() const { return m_localAABB; }
 	const Sphere& getLocalSphere() const { return m_localSphere; }
 
 
-	// 获取世界空间碰撞体（考虑Actor的位置/旋转/缩放）
+	
 	virtual AABB getWorldAABB() const
 	{
 		if (m_collisionShapeType != CollisionShapeType::AABB)
@@ -60,13 +60,13 @@ public:
 		worldAABB.reset();
 		for (const auto& v : vertices)
 		{
-			Vec3 worldV = worldMat.mulPoint(v); // 假设Matrix有转换点的方法
+			Vec3 worldV = worldMat.mulPoint(v); 
 			worldAABB.extend(worldV);
 		}
 		return worldAABB;
 	}
 
-	// 获取世界空间OBB（定向包围盒）
+	// OBB (Oriented bounding box)
 	virtual OBB getWorldOBB() const
 	{
 		if (m_collisionShapeType != CollisionShapeType::OBB)
@@ -83,16 +83,16 @@ public:
 
 		Matrix worldMat = getWorldMatrix();
 		Vec3 worldCentre = worldMat.mulPoint(m_localSphere.centre);
-		// Vec3 scale = worldMat.getScale(); // 假设Matrix有获取缩放的方法
+		
 		Vec3 scale = getWorldScale();
 		float worldRadius = m_localSphere.radius * std::max({ scale.x, scale.y, scale.z });
 		return Sphere(worldCentre, worldRadius);
 	}
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	// Calculate local collision bodies from Mesh
 	virtual void calculateLocalCollisionShape() = 0;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const = 0;
 
 	virtual Vec3 getWorldPos() const = 0;
@@ -108,23 +108,23 @@ public:
 	// draw
 	virtual void draw() = 0;
 
-	// 工厂模式相关
+	// factory mode
 public:
 	using ActorCreator = std::function<Actor* ()>;
 	static std::map<std::string, ActorCreator> m_actorCreators;
 	static void RegisterActor(const std::string& className, ActorCreator creator);
 	static Actor* CreateActorByClassName(const std::string& className);
 
-	// 序列化相关
+	// Serialization-related
 public:
-	// 获取类名（子类实现）
+	
 	virtual std::string GetClassName() const = 0;
-	// 保存/加载（子类实现）
+	// save / load
 	virtual void Save(std::ofstream& file) const = 0;
 	virtual void Load(std::ifstream& file) = 0;
 
 protected:
-	// 保存/加载基类公共数据（避免子类重复代码）
+	
 	void SaveBase(std::ofstream& file) const;
 	void LoadBase(std::ifstream& file);
 };
@@ -136,10 +136,10 @@ public:
 	SkyBoxActor();
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override {}
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return skybox->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return skybox->GetWorldPos(); }
@@ -153,9 +153,9 @@ public:
 	// **** world info interface ****//
 
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "SkyBoxActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -169,21 +169,21 @@ public:
 class TreeActor : public Actor
 {
 	StaticMesh* willow;
-	std::vector<Matrix> instanceMatrices; // 存储每个实例的世界矩阵
-	int m_instanceCount; // 实例数量
+	std::vector<Matrix> instanceMatrices; 
+	int m_instanceCount; 
 	Vec3 m_transIncrement;
 public:
-	// 生成随机位置的实例矩阵
+	// Generate instance matrices in batches
 	void generateInstanceMatrices(int count, Vec3 transIncrement);
 
-	//TreeActor();
+	
 	TreeActor(int count = 50, Vec3 transIncrement = Vec3(0.f, 0.f, 20.f));
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override {}
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return willow->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return willow->GetWorldPos(); }
@@ -197,20 +197,20 @@ public:
 	// **** world info interface ****//
 
 public:
-	// 类名
+	// class name with tree actor
 	std::string GetClassName() const override { return "TreeActor"; }
-	// 序列化
+	// save / load with Serialization
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
-		// 保存特有数据
+		
 		file.write(reinterpret_cast<const char*>(&m_instanceCount), sizeof(int));
 		file.write(reinterpret_cast<const char*>(&m_transIncrement), sizeof(Vec3));
 	}
 	void Load(std::ifstream& file) override
 	{
 		LoadBase(file);
-		// 加载特有数据
+		
 		file.read(reinterpret_cast<char*>(&m_instanceCount), sizeof(int));
 		file.read(reinterpret_cast<char*>(&m_transIncrement), sizeof(Vec3));
 
@@ -226,10 +226,10 @@ public:
 	WaterActor();
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override {}
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return water->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return water->GetWorldPos(); }
@@ -242,9 +242,9 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { water->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "WaterActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -260,11 +260,11 @@ class FPSActor : public Actor, public CameraControllable
 	AnimatedModel* fps_Mesh;	
 	AnimationInstance* animatedInstance;
 public:
-	FPSAnimationStateMachine* animStateMachine; // 新增：动画状态机
+	FPSAnimationStateMachine* animStateMachine; 
 	
 public:
 	FPSActor();
-	virtual ~FPSActor() override; // 新增：析构函数释放资源
+	virtual ~FPSActor() override; 
 	virtual void draw() override;
 
 	virtual void updatePos(Vec3 pos) override;
@@ -275,10 +275,10 @@ public:
 
 	virtual void updateWorldMatrix(Vec3 pos, float yaw, float pitch) override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return fps_Mesh->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return fps_Mesh->GetWorldPos(); }
@@ -294,9 +294,9 @@ public:
 	virtual void OnBeginPlay() override;
 	virtual void OnTick(float dt) override;
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "FPSActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -312,16 +312,16 @@ class EnemyActor : public Actor
 	AnimatedModel* enemy_Mesh;
 	AnimationInstance* animatedInstance;
 public:
-	EnemyAnimationStateMachine* animStateMachine; // 新增：动画状态机
+	EnemyAnimationStateMachine* animStateMachine; 
 
 	EnemyActor();
-	virtual ~EnemyActor() override; // 新增：析构函数释放资源
+	virtual ~EnemyActor() override; 
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return enemy_Mesh->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return enemy_Mesh->GetWorldPos(); }
@@ -340,9 +340,9 @@ public:
 	void Destroy() { m_isDestroyed = true; }
 
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "EnemyActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -359,10 +359,10 @@ public:
 	BoxActor();
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return box->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return box->GetWorldPos(); }
@@ -376,9 +376,9 @@ public:
 	// **** world info interface ****//
 
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "BoxActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -396,10 +396,10 @@ public:
 	GroundActor();
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return ground->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return ground->GetWorldPos(); }
@@ -412,9 +412,9 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { ground->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "GroundActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -432,10 +432,10 @@ public:
 	ContainerBlueActor();
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return container->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return container->GetWorldPos(); }
@@ -448,9 +448,9 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { container->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "ContainerBlueActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -468,10 +468,10 @@ public:
 	BlockActor();
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return box->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return box->GetWorldPos(); }
@@ -484,9 +484,9 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { box->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "BlockActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -500,8 +500,8 @@ public:
 class ObstacleActor	:public Actor
 {
 	StaticMesh* obstacle;
-	std::vector<Matrix> instanceMatrices; // 存储每个实例的世界矩阵
-	int m_instanceCount; // 实例数量
+	std::vector<Matrix> instanceMatrices; 
+	int m_instanceCount; 
 	Vec3 m_offset;
 public:
 	ObstacleActor(int count = 5, Vec3 offset = Vec3(0.f, 0.f, 5.f));
@@ -510,10 +510,10 @@ public:
 
 	virtual void draw() override;
 
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return obstacle->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return obstacle->GetWorldPos(); }
@@ -526,9 +526,9 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { obstacle->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "ObstacleActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);
@@ -561,10 +561,10 @@ public:
 		}
 	}
 	virtual void draw() override;
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return mesh->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return mesh->GetWorldPos(); }
@@ -577,48 +577,46 @@ public:
 	virtual void setWorldRotation(Vec3 worldRotation) override { mesh->SetWorldRotationRadian(worldRotation); }
 	// **** world info interface ****//
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "GeneralMeshActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
-		// 1. 保存Actor基类数据
+		
 		SaveBase(file);
 
-		// 2. 保存m_path的长度（int类型）
+		// Save the length of m_path
 		int pathLen = static_cast<int>(m_path.size());
 		file.write(reinterpret_cast<const char*>(&pathLen), sizeof(int));
 
-		// 3. 保存m_path的字符内容
+		// Save the character content of m_path
 		if (pathLen > 0) {
 			file.write(m_path.c_str(), pathLen);
 		}
 	}
 	void Load(std::ifstream& file) override
 	{
-		// 1. 加载Actor基类数据
+		
 		LoadBase(file);
 
-		// 2. 读取m_path的长度
+		// Read the length of m_path
 		int pathLen;
 		file.read(reinterpret_cast<char*>(&pathLen), sizeof(int));
 
-		// 3. 读取m_path的字符内容
+		// Read the character content of m_path
 		std::string path;
 		if (pathLen > 0) {
 			path.resize(pathLen);
 			file.read(&path[0], pathLen);
 		}
-		Vec3 scale = getWorldScale(); // LoadBase已经加载了缩放，这里获取后重新设置
+		Vec3 scale = getWorldScale(); 
 		Vec3 pos = getWorldPos();
 		Vec3 rot = getWorldRotation();
-		// 4. 根据新路径重新初始化mesh（会自动恢复缩放、碰撞体等配置）
+		
 		initMesh(path);
 
-		// 5. 恢复基类加载的世界位置、旋转、缩放（因为initMesh会设置默认缩放，需要覆盖）
-		// 注意：LoadBase已经调用了setWorldPos/setWorldRotation/setWorldScale，但initMesh可能会修改缩放，所以这里需要重新应用
-		// 解决方案：将initMesh中的缩放设置移除，改为在序列化时保存缩放（推荐），或在Load后重新应用
-		// 优化：将mesh的缩放也纳入序列化（当前基类已经保存了worldScale，所以Load后重新设置即可）
+		// Restore the world position, rotation and scale of the base class loading
+		
 		mesh->SetWorldPos(pos);
 		mesh->SetWorldRotationRadian(rot);
 		mesh->SetWorldScaling(scale);
@@ -630,11 +628,11 @@ private:
 class BulletActor : public Actor
 {
 private:
-	Vec3 m_direction; // 发射方向
-	float m_speed;    // 移动速度
-	int m_damage;     // 伤害值
-	float m_lifeTime; // 生命周期（防止子弹一直存在，单位：秒）
-	const float MAX_LIFE_TIME = 3.0f; // 最大生命周期
+	Vec3 m_direction; 
+	float m_speed;    
+	int m_damage;     
+	float m_lifeTime; 
+	const float MAX_LIFE_TIME = 3.0f; 
 
 	StaticMesh* m_bulletMesh;
 protected:
@@ -644,10 +642,10 @@ public:
 	~BulletActor() override = default;
 
 	virtual void draw() override;
-	// 纯虚函数：从Mesh计算局部碰撞体（子类必须实现）
+	
 	virtual void calculateLocalCollisionShape() override;
 	// **** world info interface ****//
-	// 纯虚函数：获取Actor的世界矩阵（子类实现，基于位置/旋转/缩放）
+	
 	virtual Matrix getWorldMatrix() const override { return m_bulletMesh->GetWorldMatrix(); }
 
 	virtual Vec3 getWorldPos() const override { return m_bulletMesh->GetWorldPos(); }
@@ -663,9 +661,9 @@ public:
 	void Destroy() { m_isDestroyed = true; }
 
 public:
-	// 类名
+	
 	std::string GetClassName() const override { return "BulletActor"; }
-	// 序列化
+	
 	void Save(std::ofstream& file) const override
 	{
 		SaveBase(file);

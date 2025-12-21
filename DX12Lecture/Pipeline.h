@@ -141,9 +141,7 @@ public:
 			D3D12_GPU_DESCRIPTOR_HANDLE handle = core->srvHeap.gpuHandle;
 			handle.ptr += (UINT64)(heapOffset) * core->srvHeap.incrementSize;
 
-			// 注意：这里的根参数索引是Pipeline中记录的srvTableRootIndex（原修改后的动态索引）
-			// 假设Pipeline的srvTableRootIndex是3，且SRV范围是t0-t7，直接设置描述符表即可
-			// 若需要单独设置每个SRV，需修改根签名为多个Descriptor Table，这里简化为批量绑定
+			
 			core->getCommandList()->SetGraphicsRootDescriptorTable(srvRootIndex, handle);
 		}
 	}

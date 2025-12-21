@@ -10,29 +10,29 @@ class FPSFireState;
 
 
 
-// -------------------- FPS状态机主类 --------------------
+
 class FPSAnimationStateMachine : public AnimationStateMachine {
 
 
 private:
-	bool m_isMoving;       // 是否移动（控制Idle↔Walk）
-	bool m_isReloading = false;    // 是否正在换弹
-	bool m_isFiring = false;       // 是否正在射击
-	std::string m_prevState; // 换弹/射击前的状态（用于恢复）
+	bool m_isMoving;       
+	bool m_isReloading = false;   
+	bool m_isFiring = false;       
+	std::string m_prevState; 
 
 public:
 	FPSAnimationStateMachine(AnimatedModel* model, AnimationInstance* instance)
 		: AnimationStateMachine(model, instance), m_isMoving(false), m_isReloading(false), m_isFiring(false) {
-		// 注册所有状态
+		
 		RegisterState(new FPSIdleState(this));
 		RegisterState(new FPSWalkState(this));
 		RegisterState(new FPSReloadState(this));
 		RegisterState(new FPSFireState(this));
-		// 初始状态：Idle
+		
 		ChangeState("Idle");
 	}
 
-	// 外部控制接口（供FPSActor调用）
+	// api
 	void SetMoving(bool isMoving) { m_isMoving = isMoving; }
 	void TriggerReload() { 
 		/*if (!m_isReloading && !m_isFiring)
@@ -49,7 +49,7 @@ public:
 		} 
 	}
 
-	// 获取状态标记
+	// get info
 	bool IsReloading() const { return m_isReloading; }
 	bool IsFiring() const { return m_isFiring; }
 private:

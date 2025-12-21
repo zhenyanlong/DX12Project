@@ -17,15 +17,15 @@
 #define HEIGHT 720
 
 // Camera Parameters
-const float CAMERA_MOVE_SPEED = 15.0f;    // 移动速度（单位/秒）
-const float MOUSE_SENSITIVITY = 0.15f;    // 鼠标灵敏度（弧度/像素，越小越慢）
-const bool LOCK_MOUSE_ON_START = true;    // 启动时自动锁定鼠标
+const float CAMERA_MOVE_SPEED = 15.0f;    
+const float MOUSE_SENSITIVITY = 0.15f;    
+const bool LOCK_MOUSE_ON_START = true;    
 
-// ===== 新增：重力与跳跃相关常量 =====
-const float GRAVITY = 98.0f;              // 重力加速度（游戏中放大，更有手感，实际9.8）
-const float GROUND_THRESHOLD = 0.01f;     // 落地检测的垂直阈值（避免微小抖动）
-const float JUMP_FORCE = 30.0f;           // 跳跃力度（可选）
-const float GROUND_ADJUST = 0.01f;        // 地面吸附的微小偏移（防止悬浮）
+// Gravity Parameters
+const float GRAVITY = 98.0f;              
+const float GROUND_THRESHOLD = 0.01f;     
+const float JUMP_FORCE = 30.0f;           
+const float GROUND_ADJUST = 0.01f;        
 bool IsGravityMode = true;
 
 
@@ -61,10 +61,10 @@ void submitToCommandList(Core* core, std::vector<ConstantBuffer>& constantBuffer
 	}
 }
 
-// 关卡路径定义
+// Level_path
 const std::string LEVEL1_PATH = "level1.lvl";
-const std::string LEVEL2_PATH = "level2.lvl";
-int currentLevel = 1; // 当前关卡索引
+const std::string LEVEL2_PATH = "level2.lvl"; // no exist
+int currentLevel = 1; // current level index
 
 int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	PSTR lpCmdLine, int nCmdShow)
@@ -80,9 +80,9 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	GeneralMatrix* gm = GeneralMatrix::Create();
 	TextureManager* textures = TextureManager::Create();
 
-	// 初始加载TestMap并保存为关卡1
+	// Initial load TestMap and save it as Level 1
 	auto initialLevel = std::make_shared<TestMap>();
-	initialLevel->SaveLevel(LEVEL1_PATH); // 初始保存
+	initialLevel->SaveLevel(LEVEL1_PATH); 
 	myWorld->LoadNewLevel(initialLevel);
 
 	Actor* mainActor = myWorld->GetLevel()->GetActor("FPSActor");
@@ -116,32 +116,32 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
 	
 
-	// ===================== FPS相机核心状态 =====================
-	//Vec3 cameraPos = Vec3(40.0f, 15.0f, 0.0f);  // 相机初始位置（FPS中位置由WASD控制）
-	//Vec3 lastCameraPos = cameraPos;
-	float cameraYaw = -M_PI / 2;                  // 偏航角（初始朝向Z轴负方向，对应FPS初始向前）
-	float cameraPitch = 0.0f;                   // 俯仰角（初始水平）
-	bool mouseLocked = LOCK_MOUSE_ON_START;     // 鼠标是否锁定
-	POINT windowCenter;                         // 窗口中心坐标（用于鼠标重置）
 
-	// ===== 新增：重力与落地状态变量 =====
-	float verticalVelocity = 0.0f; // 垂直速度（Y轴，向上为正）
-	bool isGrounded = false;       // 是否落地（站在地面上）
+	//Vec3 cameraPos = Vec3(40.0f, 15.0f, 0.0f);  
+	//Vec3 lastCameraPos = cameraPos;
+	float cameraYaw = -M_PI / 2;                  // Yaw
+	float cameraPitch = 0.0f;                   // pitch
+	bool mouseLocked = LOCK_MOUSE_ON_START;     
+	POINT windowCenter;                         // window center position
+
+
+	float verticalVelocity = 0.0f; 
+	bool isGrounded = false;       
 	bool firstframe = true;
 
 	
-	// 计算窗口中心（相对于屏幕）
+	// calculate window center
 	RECT windowRect;
 	GetWindowRect(win.hwnd, &windowRect);
 	windowCenter.x = windowRect.left + WIDTH / 2;
 	windowCenter.y = windowRect.top + HEIGHT / 2;
 
-	// 初始锁定鼠标
+	// lock mouse 
 	if (mouseLocked)
 	{
-		ClipCursor(&windowRect);  // 锁定鼠标在窗口内
-		ShowCursor(FALSE);        // 隐藏鼠标指针
-		SetCursorPos(windowCenter.x, windowCenter.y); // 重置鼠标到中心
+		ClipCursor(&windowRect);  
+		ShowCursor(FALSE);        
+		SetCursorPos(windowCenter.x, windowCenter.y); 
 	}
 	if (mainCameraController)
 	{
@@ -154,13 +154,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		//Process messages 
 		win.processMessages();
 
-		// ===== 关卡切换逻辑 =====
-		// 按1：切换到关卡1（加载/保存）
+		// level switch
+		
 		if (win.keys['1'] && win.keyJustPressed['1']) {
 			auto level1 = std::make_shared<TestMap>();
 			if (level1->LoadLevel(LEVEL1_PATH)) {
 				myWorld->LoadNewLevel(level1);
-				// 更新玩家Actor和位置
+				
 				mainActor = myWorld->GetLevel()->GetActor("FPSActor");
 				mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
 				if (mainCameraController)
@@ -169,19 +169,19 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				}
 			}
 			currentLevel = 1;
-			//win.keyJustPressed['1'] = false; // 防止连续触发
+			
 		}
 
-		// 按2：切换到关卡2（加载/保存）
+		// switch to level 2 (haven't achieved)
 		if (win.keys['2'] && win.keyJustPressed['2']) {
 			auto level2 = std::make_shared<TestMap>();
 			if (!level2->LoadLevel(LEVEL2_PATH)) {
-				// 若关卡2不存在，初始化并保存
-				level2->SetSpawnPoint(Vec3(60.0f, 15.0f, 0.0f)); // 自定义出生点
+				
+				level2->SetSpawnPoint(Vec3(60.0f, 15.0f, 0.0f)); 
 				level2->SaveLevel(LEVEL2_PATH);
 			}
 			myWorld->LoadNewLevel(level2);
-			// 更新玩家Actor和位置
+			
 			mainActor = myWorld->GetLevel()->GetActor("FPSActor");
 			mainCameraController = dynamic_cast<CameraControllable*>(mainActor);
 			if (mainCameraController)
@@ -189,7 +189,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				mainCameraController->updatePos(myWorld->GetLevel()->GetSpawnPoint());
 			}
 			currentLevel = 2;
-			//win.keyJustPressed['2'] = false;
+			
 		}
 
 		// update time
@@ -212,7 +212,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		GetWindowRect(win.hwnd, &windowRect);
 		windowCenter.x = windowRect.left + WIDTH / 2;
 		windowCenter.y = windowRect.top + HEIGHT / 2;
-		// 按ESC键切换鼠标锁定状态
+		// The ESC key toggles the mouse lock status
 		if (win.keys[VK_ESCAPE] && win.keyJustPressed[VK_ESCAPE])
 		{
 			mouseLocked = !mouseLocked;
@@ -225,47 +225,47 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			}
 			else
 			{
-				ClipCursor(NULL); // 解锁鼠标
+				ClipCursor(NULL); 
 			}
-			win.keyJustPressed[VK_ESCAPE] = false; // 防止连续触发
+			win.keyJustPressed[VK_ESCAPE] = false; 
 		}
 
-		//
+
 
 		Vec3 cameraForward;
 		Vec3 cameraLeft;
 		// begin play
 		myWorld->ExecuteBeginPlays();
-		// ===================== 1. 鼠标控制视角（FPS核心） =====================
-		if (mouseLocked ) // 窗口激活时才响应
+		// perspective control
+		if (mouseLocked ) 
 		{
 			POINT currentMousePos;
 			GetCursorPos(&currentMousePos);
 
-			// 计算鼠标相对于窗口中心的偏移（delta）
+			
 			int mouseDeltaX = currentMousePos.x - windowCenter.x;
 			int mouseDeltaY = currentMousePos.y - windowCenter.y;
 
-			// 重置鼠标到窗口中心（关键：避免指针移出窗口）
+			
 			SetCursorPos(windowCenter.x, windowCenter.y);
 
-			// 更新偏航角（Yaw）和俯仰角（Pitch）
-			cameraYaw -= mouseDeltaX * MOUSE_SENSITIVITY * 0.0174533f; // 转弧度
+			
+			cameraYaw -= mouseDeltaX * MOUSE_SENSITIVITY * 0.0174533f; 
 			cameraPitch -= mouseDeltaY * MOUSE_SENSITIVITY * 0.0174533f;
 
-			// 限制俯仰角（-89° ~ +89°），避免视角翻转
+			
 			cameraPitch = clamp(cameraPitch, (float) - M_PI / 2 + 0.01f, (float)M_PI / 2 - 0.01f);
 
-			// 根据欧拉角计算相机朝向（FPS中相机上方向固定为世界Y轴）
+			
 			
 			Vec3 moveForward;
 			cameraForward.x = cos(cameraYaw) * cos(cameraPitch);
 			cameraForward.y = sin(cameraPitch);
-			//cameraForward.y = 0.f;
+			
 			cameraForward.z = sin(cameraYaw) * cos(cameraPitch);
 			cameraForward = cameraForward.normalize();
 
-			moveForward.x = cos(cameraYaw); // 无俯仰角影响的水平向前
+			moveForward.x = cos(cameraYaw); 
 			moveForward.y = 0.0f;
 			moveForward.z = sin(cameraYaw);
 			moveForward = moveForward.normalize();
@@ -273,12 +273,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			{
 				cameraForward.y = 0.f;
 			}*/
-			// 计算相机右方向（用于WASD横向移动）
+			// Calculate the left direction of the camera
 			cameraLeft = Cross(cameraForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
-			Vec3 cameraUp = Vec3(0.0f, 1.0f, 0.0f); // FPS固定上方向为世界Y轴
+			Vec3 cameraUp = Vec3(0.0f, 1.0f, 0.0f); 
 
 			Vec3 moveRight = Cross(moveForward, Vec3(0.0f, 1.0f, 0.0f)).normalize();
-			// ===== 重构：先计算输入的移动向量（不直接修改位置）=====
+			
 			Vec3 desiredMove = Vec3(0, 0, 0);
 			Vec3 gravityMove = Vec3(0.f, 0.f, 0.f);
 			if (IsGravityMode)
@@ -295,14 +295,12 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				//if (win.keys['Q']) desiredMove.y -= CAMERA_MOVE_SPEED * dt;
 				//if (win.keys['E']) desiredMove.y += CAMERA_MOVE_SPEED * dt;
 				if (win.keys['F']) mainActor->setWorldPos(Vec3(40.f,15.f,0.f));
-				// ===== 步骤2：应用重力与跳跃逻辑 =====
-			// 1. 重力：仅当不在地面时，垂直速度叠加重力加速度（向下为负）
-				//if (!isGrounded)
-				//{
-				if (!firstframe&&!isGrounded)
+				
+				// add verticalVelocity for gravity
+				if (!firstframe&& !isGrounded)
 				{
 					
-					verticalVelocity -= GRAVITY * dt; // Y轴向上，重力向下，所以减
+					verticalVelocity -= GRAVITY * dt; 
 					
 				}
 				else
@@ -312,15 +310,15 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 					
 				//}
 
-				// 2. 跳跃：仅当落地时，按空格触发（可选）
+				// jump
 				if (win.keys[VK_SPACE] && win.keyJustPressed[VK_SPACE] && isGrounded)
 				{
-					verticalVelocity = JUMP_FORCE; // 给向上的力
-					isGrounded = false;            // 离开地面
-					//win.keyJustPressed[VK_SPACE] = false; // 防止连续跳跃
+					verticalVelocity = JUMP_FORCE; 
+					isGrounded = false;           
+					
 				}
 
-				// 3. 合并垂直移动（重力/跳跃）到总移动向量
+				// merge gravity move
 				gravityMove = Vec3(0, verticalVelocity*dt , 0);
 				desiredMove += gravityMove;
 			}
@@ -338,51 +336,49 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 			
 			
 			
-			// ===== 碰撞检测：获取可移动的向量 =====
+			// slide collision check
 			auto collidableActors = myWorld->getCollidableActors();
 			Vec3 resolvedMove = CollisionResolver::resolveSlidingCollision(mainActor, desiredMove, collidableActors, 0.01f);
 
 			if (IsGravityMode)
 			{
-				// ===== 步骤4：处理落地逻辑（核心）=====
-				//isGrounded = false; // 先默认未落地
-				// 判断条件：期望的垂直移动是向下（gravityMove.y < 0），且实际垂直移动远小于期望（被地面阻挡）
-				float verticalDesired = gravityMove.y; // 期望的垂直移动（向下为负）
-				float verticalResolved = resolvedMove.y; // 实际的垂直移动
+				// check if grounded
+				float verticalDesired = gravityMove.y; 
+				float verticalResolved = resolvedMove.y; 
 				if (verticalDesired < -GROUND_THRESHOLD && abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD)
 				{
-					// 落地：重置垂直速度，标记为落地
+					
 					verticalVelocity = 0.0f;
 					isGrounded = true;
 
-					// 地面吸附：轻微上移Actor，确保稳定站在地面（避免悬浮/抖动）
+					
 					Vec3 currentPos = mainActor->getWorldPos();
 					mainActor->setWorldPos(Vec3(currentPos.x, currentPos.y, currentPos.z));
 				}
-				// 可选：处理撞到天花板（垂直移动向上，被阻挡）
+				
 				//Vec3 currentPos = mainActor->getWorldPos();
 				//Vec3 newPos = currentPos + resolvedMove;
-				//mainActor->setWorldPos(newPos); // 无论是否落地，都应用移动
+				//mainActor->setWorldPos(newPos); 
 
-				//// 落地检测：判断是否有地面支撑
-				//float verticalDesired = gravityMove.y; // 期望的垂直移动（向下为负）
-				//float verticalResolved = resolvedMove.y; // 实际的垂直移动
-				//isGrounded = false; // 每帧先重置为false
+				
+				//float verticalDesired = gravityMove.y; 
+				//float verticalResolved = resolvedMove.y; 
+				//isGrounded = false; 
 
-				//// 条件1：垂直期望移动向下，且实际移动被阻挡（传统落地检测）
+				
 				//bool isBlockedByGround = (verticalDesired < -GROUND_THRESHOLD) && (abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD);
-				//// 条件2：新增射线检测（向下发射短射线，检测是否有地面，解决滑下时的落地检测）
+				
 				//bool isRayHitGround = false;
 				//if (mainActor)
 				//{
-				//	// 从Actor位置向下发射射线（长度：GROUND_THRESHOLD * 2，比如0.02f）
-				//	Vec3 rayOrigin = mainActor->getWorldPos() + Vec3(0, GROUND_THRESHOLD, 0); // 稍微上移，避免穿透
-				//	Vec3 rayDir = Vec3(0, -10, 0); // 向下
+			
+				//	Vec3 rayOrigin = mainActor->getWorldPos() + Vec3(0, GROUND_THRESHOLD, 0); 
+				//	Vec3 rayDir = Vec3(0, -10, 0); 
 				//	Ray groundRay(rayOrigin, rayDir);
-				//	float t; // 射线碰撞距离
+				//	float t; 
 				//	AABB actorAABB = mainActor->getWorldAABB();
 
-				//	// 遍历可碰撞Actor，检测射线是否击中地面（Static类型）
+				
 				//	for (auto* collActor : myWorld->getCollidableActors())
 				//	{
 				//		if (!collActor || collActor == mainActor || collActor->getActorType() != ActorType::Static)
@@ -411,13 +407,13 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				//	}
 				//}
 
-				//// 两个条件满足其一，即为落地
+				
 				//if (isBlockedByGround || isRayHitGround)
 				//{
 				//	isGrounded = true;
-				//	verticalVelocity = 0.0f; // 重置垂直速度，停止下落
+				//	verticalVelocity = 0.0f; 
 
-				//	// 地面吸附：将Actor位置对齐到地面（避免微小悬浮）
+			
 				//	if (isRayHitGround)
 				//	{
 				//		Vec3 pos = mainActor->getWorldPos();
@@ -431,42 +427,38 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				//}
 				else if (verticalDesired > GROUND_THRESHOLD && abs(verticalResolved - verticalDesired) > GROUND_THRESHOLD)
 				{
-					verticalVelocity = 0.0f; // 重置垂直速度，停止上升
+					verticalVelocity = 0.0f; 
 				}
 				else
 				{
-					// ===== 应用移动到 mainActor =====
+					
 					Vec3 currentPos = mainActor->getWorldPos();
 					mainActor->setWorldPos(currentPos + resolvedMove);
 				}
 			}
 			else
 			{
-				// ===== 应用移动到 mainActor =====
+				
 				Vec3 currentPos = mainActor->getWorldPos();
 				mainActor->setWorldPos(currentPos + resolvedMove);
 			}
 			
 
-			// ===== 从 mainActor 获取相机位置 =====
+			
 			Vec3 cameraPos = mainActor->getWorldPos();
 
-			// ===================== 3. 更新观察矩阵 =====================
+			// update view Projection matrix
 			Matrix p = Matrix::perspective(0.01f, 10000.0f, (float)WIDTH / HEIGHT, 45.0f);
 			Matrix v = Matrix::lookAt(cameraPos, cameraPos + cameraForward, cameraUp);
 			gm->viewProjMatrix = v * p;
 
 			mainCameraController->updatePos(cameraPos);
 
-			// 步骤1：补偿模型Yaw角的90度偏移（根据模型正朝向调整+/-M_PI/2，这里用+M_PI/2示例）
+			// calculate rotation matrix
 			float modelYaw = cameraYaw + M_PI / 2.0f;
-			// 步骤2：生成绕世界Y轴的Yaw旋转四元数
 			Quaternion qYaw = Quaternion::fromYRotation(-modelYaw);
-			// 步骤3：生成绕模型局部X轴的Pitch旋转四元数
 			Quaternion qPitch = Quaternion::fromXRotation(cameraPitch);
-			// 步骤4：组合旋转四元数（顺序：先Yaw后Pitch，四元数乘法是qPitch * qYaw，因为右乘）
 			Quaternion qTotal = qYaw*qPitch ;
-			// 步骤5：将四元数转为旋转矩阵（模型的最终旋转矩阵）
 			Matrix modelRotMatrix = qTotal.toMatrix();
 
 			
@@ -475,23 +467,23 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 		}
 		else
 		{
-			// 未锁定鼠标时，保持初始视角
+			
 			/*Matrix p = Matrix::perspective(0.01f, 10000.0f, (float)WIDTH / HEIGHT, 45.0f);
 			Matrix v = Matrix::lookAt(cameraPos, Vec3(0.0f, 0.0f, 0.0f), Vec3(0.0f, 1.0f, 0.0f));
 			gm->viewProjMatrix = v * p;*/
 		}
-		// 新增：检测移动状态（WASD是否按下）
+		// update move animation state
 		bool isMoving = win.keys['W'] || win.keys['S'] || win.keys['A'] || win.keys['D'];
 		FPSActor* fpsActor = dynamic_cast<FPSActor*>(mainActor);
 		FPSAnimationStateMachine* fpsAnimation = fpsActor->animStateMachine;
 		if (fpsAnimation) {
-			fpsAnimation->SetMoving(isMoving); // 设置移动状态（控制Idle/Walk切换）
-			// 检测换弹（R键）
+			fpsAnimation->SetMoving(isMoving); // set move state
+			// reload
 			if (win.keys['R'] ) {
 				fpsAnimation->TriggerReload();
-				//win.keyJustPressed['R'] = false;
+				
 			}
-			// 检测射击（鼠标左键）
+			// shoot
 			static bool testbool = true;
 			static float gaptime = 0.2f;
 			if (win.mouseButtons[0]) {
@@ -504,7 +496,7 @@ int WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 				}
 				
 				
-				//win.keyJustPressed[VK_LBUTTON] = false;
+				
 			}
 			
 			if (!testbool)

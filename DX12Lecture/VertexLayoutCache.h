@@ -37,7 +37,7 @@ public:
 		return desc;
 	}
 	static const D3D12_INPUT_LAYOUT_DESC& getInstanceLayout() {
-		// 与静态布局一致，因为使用SV_InstanceID（系统自动提供）
+		// Consistent with the static layout
 		return getStaticLayout();
 	}
 };
